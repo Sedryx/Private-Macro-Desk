@@ -11,6 +11,7 @@ export type MacroSource =
   | "FRED"
   | "FRED / calculated"
   | "Not connected"
+  | "Data unavailable"
   | "Coming soon"
   | "Live data";
 
@@ -215,6 +216,61 @@ function markProfileAsComingSoon(profile: CountryMacroProfile) {
       history: [],
     }));
   }
+}
+
+function prepareEuroAreaProfile(profile: CountryMacroProfile) {
+  profile.tabLabel = "Euro Area";
+  profile.country = "Euro Area";
+  profile.centralBank = "European Central Bank";
+  profile.currency = "EUR";
+  profile.summary =
+    "Euro Area metrics use server-side FRED observations sourced from the ECB and Eurostat where current series are available.";
+  profile.snapshot = [
+    { label: "ECB deposit", value: "Not connected yet", source: "Not connected" },
+    { label: "Main refinancing", value: "Not connected yet", source: "Not connected" },
+    { label: "HICP YoY", value: "Not connected yet", source: "Not connected" },
+    { label: "Core HICP YoY", value: "Not connected yet", source: "Not connected" },
+    { label: "Unemployment", value: "Not connected yet", source: "Not connected" },
+    { label: "Real GDP", value: "Not connected yet", source: "Not connected" },
+  ];
+  profile.sections = {
+    centralBank: section(
+      "European Central Bank",
+      "Central Bank",
+      "ECB deposit facility and main refinancing operation rates.",
+      [
+        notConnectedMetric("eu-deposit", "ECB Deposit Facility Rate"),
+        notConnectedMetric("eu-mro", "ECB Main Refinancing Operations Rate"),
+      ],
+    ),
+    inflation: section(
+      "Euro Area inflation",
+      "Inflation",
+      "Headline and core HICP calculated from Eurostat price indexes.",
+      [
+        notConnectedMetric("eu-hicp", "Euro Area HICP YoY"),
+        notConnectedMetric("eu-core-hicp", "Euro Area Core HICP YoY"),
+      ],
+    ),
+    labour: section(
+      "Euro Area labour market",
+      "Labour",
+      "Harmonised unemployment from the latest FRED series available.",
+      [notConnectedMetric("eu-unemployment", "Euro Area Unemployment Rate")],
+    ),
+    growth: section(
+      "Euro Area growth",
+      "Growth / Activity",
+      "Quarterly real GDP growth calculated from the real GDP level.",
+      [notConnectedMetric("eu-gdp", "Euro Area Real GDP Growth QoQ")],
+    ),
+    ratesMarkets: section(
+      "Euro Area rates & markets",
+      "Rates & Markets",
+      "No additional market series connected in this phase.",
+      [notConnectedMetric("eu-markets", "Euro Area Market Indicators")],
+    ),
+  };
 }
 
 const profiles: CountryMacroProfile[] = [];
@@ -499,6 +555,11 @@ for (const profile of profiles) {
   if (profile.id !== "united-states") {
     markProfileAsComingSoon(profile);
   }
+}
+
+const euroAreaProfile = profiles.find((profile) => profile.id === "eurozone");
+if (euroAreaProfile) {
+  prepareEuroAreaProfile(euroAreaProfile);
 }
 
 export const countryMacroProfiles = profiles;

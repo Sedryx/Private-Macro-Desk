@@ -76,12 +76,24 @@ export async function syncFredIfStale() {
   }
 
   console.log("[FRED scheduler] Refreshing FRED data...");
+  const failures: string[] = [];
 
   for (const series of FRED_SERIES) {
-    const result = await syncFredSeries(series);
-    console.log(
-      `[FRED scheduler] ${result.code}: ${result.valueCount} values updated.`,
-    );
+    try {
+      const result = await syncFredSeries(series);
+      console.log(
+        `[FRED scheduler] ${result.code}: ${result.valueCount} values updated.`,
+      );
+    } catch (error) {
+      failures.push(series.code);
+      console.error(
+        `[FRED scheduler] ${series.code} failed: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    throw new Error(`Partial FRED failure: ${failures.join(", ")}`);
   }
 
   console.log("[FRED scheduler] Automatic refresh complete.");

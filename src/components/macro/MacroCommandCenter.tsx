@@ -29,7 +29,9 @@ export function MacroCommandCenter({
               Macro command center
             </p>
             <span className="rounded-full border border-[#4a4132] bg-[#211d16] px-2 py-0.5 text-[8px] font-semibold text-[#bca273]">
-              {hasFredData ? "USA live · Others coming soon" : "Not connected"}
+              {hasFredData
+                ? "USA + Euro Area live · Others coming soon"
+                : "Not connected"}
             </span>
           </div>
           <h1 className="mt-2 text-[27px] font-semibold tracking-[-0.04em] text-[#f0f2ef] sm:text-[34px]">
@@ -41,8 +43,8 @@ export function MacroCommandCenter({
           </p>
         </div>
         <p className="max-w-sm text-[9px] leading-4 text-[#606b66] lg:text-right">
-          USA uses live FRED data. Other regions are clean static placeholders
-          until official sources are connected.
+          USA and Euro Area use server-side FRED data. Other regions remain clean
+          placeholders until official sources are connected.
         </p>
       </header>
 

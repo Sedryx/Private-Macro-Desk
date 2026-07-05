@@ -14,7 +14,7 @@ export function GlobalMacroOverview({ profiles }: { profiles: CountryMacroProfil
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#7e8a84]">Cross-country monitor</p>
           <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-[#e7ebe8]">Global policy board</h2>
         </div>
-        <p className="text-[10px] text-[#65706b]">USA live · other regions coming soon</p>
+        <p className="text-[10px] text-[#65706b]">USA and Euro Area live · other regions coming soon</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -51,17 +51,12 @@ function SourceBadge({ profile }: { profile: CountryMacroProfile }) {
     section.indicators.map((indicator) => indicator.source),
   );
   const hasFredData = sources.some((source) => source.startsWith("FRED"));
-  const hasMissingUsData =
-    profile.countryCode === "US" &&
-    sources.some((source) => source === "Not connected");
   const label =
-    profile.countryCode !== "US"
-      ? "Coming soon"
-      : !hasFredData
+    hasFredData
+      ? "Live data"
+      : profile.countryCode === "US" || profile.countryCode === "EU"
         ? "Not connected"
-        : hasMissingUsData
-          ? "FRED / partial"
-          : "Live data";
+        : "Coming soon";
 
   return (
     <span

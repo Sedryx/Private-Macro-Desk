@@ -1,4 +1,11 @@
-import { MacroCategory } from "@prisma/client";
+import {
+  FRED_SERIES,
+  type FredSeriesConfig,
+  type FredTransform,
+} from "@/lib/data/macroRegions";
+
+export { FRED_SERIES };
+export type { FredSeriesConfig, FredTransform };
 
 const FRED_OBSERVATIONS_URL =
   "https://api.stlouisfed.org/fred/series/observations";
@@ -14,48 +21,10 @@ export type ParsedFredObservation = {
   value: number;
 };
 
-export type FredTransform =
-  | "DIRECT"
-  | "YOY_PERCENT"
-  | "MOM_PERCENT"
-  | "MONTHLY_CHANGE";
-
-export type FredSeriesConfig = {
-  code: string;
-  seriesId: string;
-  name: string;
-  category: MacroCategory;
-  country: string;
-  unit: string;
-  transform: FredTransform;
-  scale?: number;
-};
-
 type FredObservationsResponse = {
   observations?: FredObservation[];
   error_message?: string;
 };
-
-export const FRED_SERIES: FredSeriesConfig[] = [
-  fred("FEDFUNDS", "FEDFUNDS", "Federal Funds Effective Rate", MacroCategory.RATES, "%"),
-  fred("FED_BALANCE_SHEET", "WALCL", "Federal Reserve Balance Sheet", MacroCategory.CENTRAL_BANK, "USD billions", "DIRECT", 0.001),
-  fred("US_CPI_YOY", "CPIAUCSL", "US CPI YoY", MacroCategory.INFLATION, "%", "YOY_PERCENT"),
-  fred("US_CORE_CPI_YOY", "CPILFESL", "US Core CPI YoY", MacroCategory.INFLATION, "%", "YOY_PERCENT"),
-  fred("US_PCE_YOY", "PCEPI", "US PCE YoY", MacroCategory.INFLATION, "%", "YOY_PERCENT"),
-  fred("US_CORE_PCE_YOY", "PCEPILFE", "US Core PCE YoY", MacroCategory.INFLATION, "%", "YOY_PERCENT"),
-  fred("US_UNEMPLOYMENT", "UNRATE", "US Unemployment Rate", MacroCategory.LABOR, "%"),
-  fred("US_NFP_CHANGE", "PAYEMS", "US Nonfarm Payrolls Monthly Change", MacroCategory.LABOR, "k jobs", "MONTHLY_CHANGE"),
-  fred("US_INITIAL_CLAIMS", "ICSA", "US Initial Jobless Claims", MacroCategory.LABOR, "claims"),
-  fred("US_AVG_HOURLY_EARNINGS_YOY", "CES0500000003", "US Average Hourly Earnings YoY", MacroCategory.LABOR, "%", "YOY_PERCENT"),
-  fred("US_REAL_GDP_GROWTH", "A191RL1Q225SBEA", "US Real GDP Growth", MacroCategory.GROWTH, "%"),
-  fred("US_RETAIL_SALES_MOM", "RSAFS", "US Retail Sales MoM", MacroCategory.GROWTH, "%", "MOM_PERCENT"),
-  fred("US_INDUSTRIAL_PRODUCTION_YOY", "INDPRO", "US Industrial Production YoY", MacroCategory.GROWTH, "%", "YOY_PERCENT"),
-  fred("US_CONSUMER_SENTIMENT", "UMCSENT", "US Consumer Sentiment", MacroCategory.GROWTH, "index"),
-  fred("US2Y", "DGS2", "US 2Y Treasury Yield", MacroCategory.RATES, "%"),
-  fred("US10Y", "DGS10", "US 10Y Treasury Yield", MacroCategory.RATES, "%"),
-  fred("US_2Y10Y_CURVE", "T10Y2Y", "US 10Y minus 2Y Treasury Curve", MacroCategory.RATES, "%"),
-  fred("US_DOLLAR_BROAD_INDEX", "DTWEXBGS", "Nominal Broad US Dollar Index", MacroCategory.OTHER, "index"),
-];
 
 export async function fetchFredObservations(
   seriesId: string,
@@ -150,7 +119,9 @@ export function transformFredObservations(
   transform: FredTransform,
 ): ParsedFredObservation[] {
   if (transform === "YOY_PERCENT") return calculateYoY(observations);
-  if (transform === "MOM_PERCENT") return calculateMoM(observations);
+  if (transform === "MOM_PERCENT" || transform === "PERIOD_PERCENT") {
+    return calculateMoM(observations);
+  }
   if (transform === "MONTHLY_CHANGE") return calculateMonthlyChange(observations);
   return observations;
 }
@@ -215,18 +186,6 @@ export async function syncFredSeries(
       latestDate: values.at(-1)?.date,
     };
   });
-}
-
-function fred(
-  code: string,
-  seriesId: string,
-  name: string,
-  category: MacroCategory,
-  unit: string,
-  transform: FredTransform = "DIRECT",
-  scale?: number,
-): FredSeriesConfig {
-  return { code, seriesId, name, category, country: "US", unit, transform, scale };
 }
 
 function point(date: Date, value: number): ParsedFredObservation {

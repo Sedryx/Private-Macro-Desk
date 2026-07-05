@@ -1,47 +1,28 @@
 import "server-only";
 
 import {
+  FRED_SERIES,
+  MACRO_REGION_CONFIGS,
+  type FredSeriesConfig,
+  type MacroChangeKind,
+  type MacroDisplayKind,
+} from "@/lib/data/macroRegions";
+import {
   countryMacroProfiles,
   type CountryMacroProfile,
-  type MacroSectionKey,
   type MacroSource,
   type MacroTrendPoint,
 } from "@/lib/macroProfiles";
 import { prisma } from "@/lib/prisma";
 
-type DisplayKind = "percent" | "billions" | "jobs" | "claims" | "index";
-type ChangeKind = "bp" | "pp" | "value";
-
-type FredBinding = {
-  section: MacroSectionKey;
-  metricId: string;
-  display: DisplayKind;
-  change: ChangeKind;
-  snapshotLabel?: string;
-};
-
 type SeriesPoint = { date: Date; value: number };
 
-const fredBindings: Record<string, FredBinding> = {
-  FEDFUNDS: binding("centralBank", "us-policy", "percent", "bp", "Fed funds"),
-  FED_BALANCE_SHEET: binding("centralBank", "us-balance", "billions", "value"),
-  US_CPI_YOY: binding("inflation", "us-cpi", "percent", "pp", "CPI YoY"),
-  US_CORE_CPI_YOY: binding("inflation", "us-core-cpi", "percent", "pp"),
-  US_PCE_YOY: binding("inflation", "us-pce", "percent", "pp"),
-  US_CORE_PCE_YOY: binding("inflation", "us-core-pce", "percent", "pp"),
-  US_UNEMPLOYMENT: binding("labour", "us-unemployment", "percent", "pp", "Unemployment"),
-  US_NFP_CHANGE: binding("labour", "us-nfp", "jobs", "value"),
-  US_INITIAL_CLAIMS: binding("labour", "us-claims", "claims", "value"),
-  US_AVG_HOURLY_EARNINGS_YOY: binding("labour", "us-wages", "percent", "pp"),
-  US_REAL_GDP_GROWTH: binding("growth", "us-gdp", "percent", "pp", "Real GDP"),
-  US_RETAIL_SALES_MOM: binding("growth", "us-retail", "percent", "pp"),
-  US_INDUSTRIAL_PRODUCTION_YOY: binding("growth", "us-industrial-production", "percent", "pp"),
-  US_CONSUMER_SENTIMENT: binding("growth", "us-sentiment", "index", "value"),
-  US2Y: binding("ratesMarkets", "us-2y", "percent", "bp"),
-  US10Y: binding("ratesMarkets", "us-10y", "percent", "bp", "US 10Y"),
-  US_2Y10Y_CURVE: binding("ratesMarkets", "us-curve", "percent", "bp"),
-  US_DOLLAR_BROAD_INDEX: binding("ratesMarkets", "us-dollar", "index", "value", "Broad USD"),
-};
+const configByCode = new Map(FRED_SERIES.map((series) => [series.code, series]));
+const regionByCode = new Map(
+  MACRO_REGION_CONFIGS.flatMap((region) =>
+    region.indicators.map((series) => [series.code, region] as const),
+  ),
+);
 
 export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
   const profiles = structuredClone(countryMacroProfiles);
@@ -49,7 +30,7 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
   try {
     const indicators = await prisma.macroIndicator.findMany({
       where: {
-        code: { in: Object.keys(fredBindings) },
+        code: { in: FRED_SERIES.map((series) => series.code) },
         source: { in: ["FRED", "FRED / calculated"] },
       },
       include: {
@@ -59,15 +40,15 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
         },
       },
     });
-
-    const usProfile = profiles.find((profile) => profile.id === "united-states");
-    if (!usProfile) return profiles;
-
     const loadedSeries = new Map<string, SeriesPoint[]>();
 
     for (const indicator of indicators) {
-      const bindingConfig = fredBindings[indicator.code];
-      if (!bindingConfig || indicator.values.length === 0) continue;
+      const seriesConfig = configByCode.get(indicator.code);
+      const regionConfig = regionByCode.get(indicator.code);
+      const profile = profiles.find(
+        (item) => item.id === regionConfig?.profileId,
+      );
+      if (!seriesConfig || !profile || indicator.values.length === 0) continue;
 
       const values = indicator.values
         .map((item) => ({ date: item.date, value: item.value.toNumber() }))
@@ -76,78 +57,162 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
       const previous = values.at(-2);
       if (!latest) continue;
 
+      if (isStale(latest.date, seriesConfig.maxAgeDays)) {
+        markSeriesUnavailable(profile, seriesConfig, latest.date);
+        continue;
+      }
+
       loadedSeries.set(indicator.code, values);
-
-      const source = normalizeSource(indicator.source);
-      const displayValue = formatValue(latest.value, bindingConfig.display);
-      const displayChange = formatChange(
-        latest.value - (previous?.value ?? latest.value),
-        bindingConfig.change,
-        bindingConfig.display,
+      hydrateMetric(
+        profile,
+        seriesConfig,
+        values,
+        latest,
+        previous,
+        normalizeSource(indicator.source),
       );
-      const latestDate = formatDate(latest.date);
-      const metric = usProfile.sections[bindingConfig.section].indicators.find(
-        (item) => item.id === bindingConfig.metricId,
-      );
-
-      if (metric) {
-        metric.value = displayValue;
-        metric.change = displayChange;
-        metric.history = toChartPoints(values);
-        metric.source = source;
-        metric.latestDate = latestDate;
-      }
-
-      if (bindingConfig.snapshotLabel) {
-        const snapshot = usProfile.snapshot.find(
-          (item) => item.label === bindingConfig.snapshotLabel,
-        );
-        if (snapshot) {
-          snapshot.value = displayValue;
-          snapshot.change = displayChange;
-          snapshot.source = source;
-          snapshot.latestDate = latestDate;
-        }
-      }
-
-      if (indicator.code === "FEDFUNDS") usProfile.policyRate = displayValue;
-      if (indicator.code === "US_CPI_YOY") usProfile.inflation = displayValue;
-      if (indicator.code === "US_UNEMPLOYMENT") usProfile.unemployment = displayValue;
-      if (indicator.code === "US_DOLLAR_BROAD_INDEX") usProfile.marketProxy = displayValue;
     }
 
-    applyThreeMonthTrend(
-      usProfile,
-      loadedSeries.get("FEDFUNDS"),
-      "us-policy-trend",
-      "Tightening",
-      "Easing",
-    );
-    applyThreeMonthTrend(
-      usProfile,
-      loadedSeries.get("FED_BALANCE_SHEET"),
-      "us-balance-trend",
-      "Expanding",
-      "Shrinking",
-    );
-
-    const policyTrend = usProfile.sections.centralBank.indicators.find(
-      (metric) => metric.id === "us-policy-trend",
-    );
-    if (policyTrend?.source === "FRED / calculated") {
-      usProfile.stance = `${policyTrend.value} policy trend`;
-      usProfile.stanceTone =
-        policyTrend.value === "Tightening"
-          ? "tight"
-          : policyTrend.value === "Easing"
-            ? "easing"
-            : "neutral";
-    }
-
+    applyUnitedStatesTrends(profiles, loadedSeries);
+    markConnectedRegions(profiles);
     return profiles;
   } catch (error) {
-    console.error("Unable to load FRED macro values from PostgreSQL", error);
+    console.error("Unable to load macro values from PostgreSQL", error);
     return profiles;
+  }
+}
+
+function hydrateMetric(
+  profile: CountryMacroProfile,
+  config: FredSeriesConfig,
+  values: SeriesPoint[],
+  latest: SeriesPoint,
+  previous: SeriesPoint | undefined,
+  source: MacroSource,
+) {
+  const displayValue = formatValue(latest.value, config.ui.display);
+  const displayChange = formatChange(
+    latest.value - (previous?.value ?? latest.value),
+    config.ui.change,
+    config.ui.display,
+  );
+  const latestDate = formatDate(latest.date);
+  const metric = profile.sections[config.ui.section].indicators.find(
+    (item) => item.id === config.ui.metricId,
+  );
+
+  if (metric) {
+    metric.value = displayValue;
+    metric.change = displayChange;
+    metric.history = toChartPoints(values);
+    metric.source = source;
+    metric.latestDate = latestDate;
+    metric.context = `${config.name} · FRED series ${config.seriesId}`;
+  }
+
+  if (config.ui.snapshotLabel) {
+    const snapshot = profile.snapshot.find(
+      (item) => item.label === config.ui.snapshotLabel,
+    );
+    if (snapshot) {
+      snapshot.value = displayValue;
+      snapshot.change = displayChange;
+      snapshot.source = source;
+      snapshot.latestDate = latestDate;
+    }
+  }
+
+  if (config.ui.profileField) {
+    profile[config.ui.profileField] = displayValue;
+  }
+}
+
+function markSeriesUnavailable(
+  profile: CountryMacroProfile,
+  config: FredSeriesConfig,
+  latestDate: Date,
+) {
+  const metric = profile.sections[config.ui.section].indicators.find(
+    (item) => item.id === config.ui.metricId,
+  );
+  const context = `Latest FRED observation is stale (${formatDate(latestDate)})`;
+
+  if (metric) {
+    metric.value = "Data unavailable";
+    metric.change = undefined;
+    metric.history = [];
+    metric.source = "Data unavailable";
+    metric.latestDate = formatDate(latestDate);
+    metric.context = context;
+  }
+
+  if (config.ui.snapshotLabel) {
+    const snapshot = profile.snapshot.find(
+      (item) => item.label === config.ui.snapshotLabel,
+    );
+    if (snapshot) {
+      snapshot.value = "Data unavailable";
+      snapshot.change = undefined;
+      snapshot.source = "Data unavailable";
+      snapshot.latestDate = formatDate(latestDate);
+    }
+  }
+
+  if (config.ui.profileField) {
+    profile[config.ui.profileField] = "Data unavailable";
+  }
+}
+
+function applyUnitedStatesTrends(
+  profiles: CountryMacroProfile[],
+  loadedSeries: Map<string, SeriesPoint[]>,
+) {
+  const usProfile = profiles.find((profile) => profile.id === "united-states");
+  if (!usProfile) return;
+
+  applyThreeMonthTrend(
+    usProfile,
+    loadedSeries.get("FEDFUNDS"),
+    "us-policy-trend",
+    "Tightening",
+    "Easing",
+  );
+  applyThreeMonthTrend(
+    usProfile,
+    loadedSeries.get("FED_BALANCE_SHEET"),
+    "us-balance-trend",
+    "Expanding",
+    "Shrinking",
+  );
+
+  const policyTrend = usProfile.sections.centralBank.indicators.find(
+    (metric) => metric.id === "us-policy-trend",
+  );
+  if (policyTrend?.source === "FRED / calculated") {
+    usProfile.stance = `${policyTrend.value} policy trend`;
+    usProfile.stanceTone =
+      policyTrend.value === "Tightening"
+        ? "tight"
+        : policyTrend.value === "Easing"
+          ? "easing"
+          : "neutral";
+  }
+}
+
+function markConnectedRegions(profiles: CountryMacroProfile[]) {
+  for (const region of MACRO_REGION_CONFIGS) {
+    if (region.dataStatus !== "live") continue;
+    const profile = profiles.find((item) => item.id === region.profileId);
+    if (!profile || region.profileId === "united-states") continue;
+
+    const hasLiveMetric = Object.values(profile.sections).some((section) =>
+      section.indicators.some((metric) => metric.source.startsWith("FRED")),
+    );
+    if (hasLiveMetric) {
+      profile.stance = "Live data";
+      profile.stanceTone = "neutral";
+      profile.summary = `${region.regionName} macro data is synchronized server-side from ${region.sourceLabels.join(", ")} series available through FRED.`;
+    }
   }
 }
 
@@ -159,30 +224,26 @@ function applyThreeMonthTrend(
   fallingLabel: string,
 ) {
   if (!values?.length) return;
-
   const latest = values.at(-1);
   if (!latest) return;
 
   const targetDate = new Date(latest.date);
   targetDate.setUTCMonth(targetDate.getUTCMonth() - 3);
-  const comparison = values
-    .filter((point) => point.date <= targetDate)
-    .at(-1);
+  const comparison = values.filter((point) => point.date <= targetDate).at(-1);
   if (!comparison) return;
 
   const difference = latest.value - comparison.value;
-  const trend =
-    Math.abs(difference) < 0.0001
-      ? "Flat"
-      : difference > 0
-        ? risingLabel
-        : fallingLabel;
   const metric = profile.sections.centralBank.indicators.find(
     (item) => item.id === metricId,
   );
   if (!metric) return;
 
-  metric.value = trend;
+  metric.value =
+    Math.abs(difference) < 0.0001
+      ? "Flat"
+      : difference > 0
+        ? risingLabel
+        : fallingLabel;
   metric.change = `vs ${formatDate(comparison.date)}`;
   metric.context = "Calculated from the latest value versus three months earlier";
   metric.history = toChartPoints(values);
@@ -205,7 +266,7 @@ function toChartPoints(values: SeriesPoint[]): MacroTrendPoint[] {
     }));
 }
 
-function formatValue(value: number, display: DisplayKind) {
+function formatValue(value: number, display: MacroDisplayKind) {
   if (display === "percent") return `${formatNumber(value, 2)}%`;
   if (display === "billions") return `$${formatNumber(value, 0)}bn`;
   if (display === "jobs") return `${value > 0 ? "+" : ""}${formatNumber(value, 0)}k`;
@@ -215,8 +276,8 @@ function formatValue(value: number, display: DisplayKind) {
 
 function formatChange(
   difference: number,
-  change: ChangeKind,
-  display: DisplayKind,
+  change: MacroChangeKind,
+  display: MacroDisplayKind,
 ) {
   if (Math.abs(difference) < 0.0001) return "Flat";
   if (change === "bp") {
@@ -255,12 +316,9 @@ function normalizeSource(source: string | null): MacroSource {
   return source === "FRED / calculated" ? "FRED / calculated" : "FRED";
 }
 
-function binding(
-  section: MacroSectionKey,
-  metricId: string,
-  display: DisplayKind,
-  change: ChangeKind,
-  snapshotLabel?: string,
-): FredBinding {
-  return { section, metricId, display, change, snapshotLabel };
+function isStale(date: Date, maxAgeDays?: number) {
+  return (
+    maxAgeDays !== undefined &&
+    Date.now() - date.getTime() > maxAgeDays * 24 * 60 * 60 * 1000
+  );
 }

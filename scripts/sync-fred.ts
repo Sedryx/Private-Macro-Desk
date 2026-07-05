@@ -14,18 +14,31 @@ async function main() {
   }
 
   console.log(`Syncing ${FRED_SERIES.length} FRED series...`);
+  const failures: string[] = [];
 
   for (const series of FRED_SERIES) {
-    const result = await syncFredSeries(series, apiKey);
-    const latestDate = result.latestDate?.toISOString().slice(0, 10) ?? "unknown";
-    console.log(
-      `✓ ${result.code} ← ${result.seriesId}: ${result.valueCount} values (latest ${latestDate})`,
-    );
+    try {
+      const result = await syncFredSeries(series, apiKey);
+      const latestDate = result.latestDate?.toISOString().slice(0, 10) ?? "unknown";
+      console.log(
+        `✓ ${result.code} ← ${result.seriesId}: ${result.valueCount} values (latest ${latestDate})`,
+      );
+    } catch (error) {
+      failures.push(series.code);
+      console.error(
+        `✗ ${series.code}: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   }
 
   const { prisma } = await import("../src/lib/prisma");
   await prisma.$disconnect();
-  console.log("FRED sync complete.");
+  if (failures.length > 0) {
+    process.exitCode = 1;
+    console.error(`FRED sync completed with failures: ${failures.join(", ")}`);
+  } else {
+    console.log("FRED sync complete.");
+  }
 }
 
 main().catch(async (error: unknown) => {

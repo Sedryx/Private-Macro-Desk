@@ -135,6 +135,8 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
                         ? "Awaiting sync"
                         : activeMetric.source === "Coming soon"
                           ? "Awaiting integration"
+                          : activeMetric.source === "Data unavailable"
+                            ? "Source unavailable"
                           : "No recent change")}
                   </p>
                   <p className="mt-1 text-[8px] text-[#65706b]">
@@ -154,6 +156,8 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
                   ? "Not connected yet — run the FRED sync."
                   : activeMetric?.source === "Coming soon"
                     ? "Coming soon — official data source not connected."
+                    : activeMetric?.source === "Data unavailable"
+                      ? "Data unavailable from the configured FRED series."
                     : "No values yet"}
               </p>
             )}
@@ -185,6 +189,8 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
                         {indicator.change ??
                           (indicator.source === "Coming soon"
                             ? "Awaiting integration"
+                            : indicator.source === "Data unavailable"
+                              ? "Source unavailable"
                             : indicator.source === "Not connected"
                               ? "Awaiting sync"
                               : "No recent change")}
@@ -225,6 +231,7 @@ function SourceBadge({
       : source === "FRED / calculated"
         ? "border-[#3d4e57] bg-[#152027] text-[#9eb9c5]"
         : source === "Not connected" ||
+            source === "Data unavailable" ||
             source === "Coming soon" ||
             source === "FRED / partial"
           ? "border-[#394147] bg-[#171d21] text-[#8d9993]"
@@ -245,12 +252,10 @@ function getProfileSourceLabel(
   countryCode: string,
   sources: MacroSource[],
 ): MacroSource | "FRED / partial" {
-  if (countryCode !== "US") return "Coming soon";
-
   const hasFred = sources.some((source) => source.startsWith("FRED"));
-  if (!hasFred) return "Not connected";
-  if (sources.some((source) => source === "Not connected")) return "FRED / partial";
-  return "Live data";
+  if (hasFred) return "Live data";
+  if (countryCode === "US" || countryCode === "EU") return "Not connected";
+  return "Coming soon";
 }
 
 function HeaderMetric({ label, value }: { label: string; value: string }) {

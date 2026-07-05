@@ -28,12 +28,10 @@ const assets = [
 ] as const;
 
 const indicators = [
-  { code: "ECB_DEPOSIT_RATE", name: "ECB Deposit Facility Rate", country: "EU", category: MacroCategory.CENTRAL_BANK, unit: "%", source: "Demo seed - not live" },
   { code: "SNB_POLICY_RATE", name: "SNB Policy Rate", country: "CH", category: MacroCategory.CENTRAL_BANK, unit: "%", source: "Demo seed - not live" },
 ] as const;
 
 const macroSeries: Record<(typeof indicators)[number]["code"], number[]> = {
-  ECB_DEPOSIT_RATE: [4.0, 4.0, 3.75, 3.75, 3.5, 3.5, 3.25, 3.25, 3.0, 3.0, 2.75, 2.75, 2.5, 2.5, 2.25, 2.25, 2.0, 2.0],
   SNB_POLICY_RATE: [1.75, 1.75, 1.5, 1.5, 1.25, 1.25, 1.0, 1.0, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.25],
 };
 
