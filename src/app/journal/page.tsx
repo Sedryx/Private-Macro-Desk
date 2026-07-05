@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { TradeCreateForm } from "@/components/journal/TradeCreateForm";
 import { TradeList, type TradeView } from "@/components/journal/TradeList";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -52,6 +54,7 @@ async function getJournalData() {
 
     const tradeViews: TradeView[] = trades.map((trade) => ({
       ...trade,
+      noteRequestId: randomUUID(),
       entryPrice: trade.entryPrice?.toString() ?? null,
       stopLoss: trade.stopLoss?.toString() ?? null,
       takeProfit: trade.takeProfit?.toString() ?? null,

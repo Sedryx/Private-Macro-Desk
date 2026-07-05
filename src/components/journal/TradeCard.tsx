@@ -156,7 +156,7 @@ export function TradeCard({ trade, users }: { trade: TradeView; users: JournalUs
           <p className="mt-4 text-[12px] text-[#68736e]">No discussion yet. Add the first observation below.</p>
         )}
 
-        <TradeNoteForm tradeId={trade.id} users={users} defaultUserId={trade.userId} />
+        <TradeNoteForm tradeId={trade.id} users={users} defaultUserId={trade.userId} requestId={trade.noteRequestId} />
       </div>
     </article>
   );

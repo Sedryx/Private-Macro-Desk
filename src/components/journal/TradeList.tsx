@@ -6,6 +6,7 @@ export type JournalUser = { id: string; name: string };
 
 export type TradeView = {
   id: string;
+  noteRequestId: string;
   userId: string;
   direction: TradeDirection;
   status: TradeStatus;

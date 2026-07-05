@@ -145,14 +145,15 @@ model Trade {
 }
 
 model TradeNote {
-  id             String   @id @default(cuid())
-  tradeId        String
-  userId         String
-  content        String
-  screenshotUrls String[] @default([])
-  createdAt      DateTime @default(now())
-  trade          Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  tradeId         String
+  userId          String
+  content         String
+  screenshotUrls  String[] @default([])
+  clientRequestId String?  @unique
+  createdAt       DateTime @default(now())
+  trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model MacroIndicator {

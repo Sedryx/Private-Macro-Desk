@@ -150,11 +150,12 @@ export async function addTradeNote(
 ): Promise<JournalActionState> {
   const tradeId = getString(formData, "tradeId");
   const userId = getString(formData, "userId");
+  const clientRequestId = getString(formData, "requestId");
   const content = getString(formData, "content").trim();
   const screenshots = getScreenshotFiles(formData);
 
-  if (!tradeId || !userId) {
-    return { status: "error", message: "Trade and note author are required." };
+  if (!tradeId || !userId || !clientRequestId) {
+    return { status: "error", message: "Trade, note author and request ID are required." };
   }
 
   if (!content && screenshots.length === 0) {
@@ -174,6 +175,19 @@ export async function addTradeNote(
   let screenshotUrls: string[] = [];
 
   try {
+    const existingNote = await prisma.tradeNote.findUnique({
+      where: { clientRequestId },
+      select: { id: true, screenshotUrls: true },
+    });
+
+    if (existingNote) {
+      revalidatePath("/journal");
+      return {
+        status: "success",
+        message: existingNote.screenshotUrls.length > 0 ? "Screenshot note already saved." : "Note already saved.",
+      };
+    }
+
     const [trade, user] = await Promise.all([
       prisma.trade.findUnique({ where: { id: tradeId }, select: { id: true } }),
       prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
@@ -186,7 +200,7 @@ export async function addTradeNote(
     screenshotUrls = await saveScreenshots(screenshots);
 
     await prisma.tradeNote.create({
-      data: { tradeId: trade.id, userId: user.id, content, screenshotUrls },
+      data: { tradeId: trade.id, userId: user.id, content, screenshotUrls, clientRequestId },
     });
 
     revalidatePath("/journal");
@@ -196,9 +210,19 @@ export async function addTradeNote(
     };
   } catch (error) {
     await removeScreenshots(screenshotUrls);
+
+    if (isUniqueConstraintError(error)) {
+      revalidatePath("/journal");
+      return { status: "success", message: "Note already saved." };
+    }
+
     console.error("Unable to add trade note", error);
     return { status: "error", message: "The note could not be saved." };
   }
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
 
 function getString(formData: FormData, key: string) {

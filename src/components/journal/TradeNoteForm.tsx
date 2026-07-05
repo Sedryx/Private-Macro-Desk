@@ -22,10 +22,12 @@ export function TradeNoteForm({
   tradeId,
   users,
   defaultUserId,
+  requestId,
 }: {
   tradeId: string;
   users: JournalUser[];
   defaultUserId: string;
+  requestId: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +83,7 @@ export function TradeNoteForm({
   return (
     <form ref={formRef} action={formAction} onReset={clearScreenshots} className="mt-4 border-t border-[var(--line)] pt-4">
       <input type="hidden" name="tradeId" value={tradeId} />
+      <input type="hidden" name="requestId" value={requestId} />
       <div className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start">
         <label>
           <span className="mb-1.5 block text-[10px] font-medium text-[#77817d]">Author</span>
