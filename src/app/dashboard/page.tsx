@@ -1,49 +1,231 @@
-import { PageHeader } from "@/components/ui/PageHeader";
-import { SectionCard } from "@/components/ui/SectionCard";
-import { StatCard } from "@/components/ui/StatCard";
+import { TradeStatus } from "@prisma/client";
 
-export default function DashboardPage() {
+import { DashboardStats } from "@/components/dashboard/DashboardStats";
+import { DeskVisuals, type DistributionItem } from "@/components/dashboard/DeskVisuals";
+import { MarketRegimeCard } from "@/components/dashboard/MarketRegimeCard";
+import { PreTradeChecklist } from "@/components/dashboard/PreTradeChecklist";
+import { TradeDeskSnapshot, type RecentTradeNote, type TradeDeskItem } from "@/components/dashboard/TradeDeskSnapshot";
+import { WatchlistSnapshot, type WatchlistSnapshotItem } from "@/components/dashboard/WatchlistSnapshot";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+const OWNER_EMAIL = "joachim@private-macro-desk.local";
+const MAIN_WATCHLIST_NAME = "Main Watchlist";
+
+async function getDashboardData() {
+  try {
+    const [watchlist, tradeStatusRows, recentTrades, recentNotes, openTrades] = await Promise.all([
+      prisma.watchlist.findFirst({
+        where: {
+          name: MAIN_WATCHLIST_NAME,
+          user: { email: OWNER_EMAIL },
+        },
+        select: {
+          name: true,
+          items: {
+            orderBy: { updatedAt: "desc" },
+            select: {
+              id: true,
+              bias: true,
+              importantLevel: true,
+              notes: true,
+              updatedAt: true,
+              asset: { select: { symbol: true, type: true } },
+            },
+          },
+        },
+      }),
+      prisma.trade.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
+      prisma.trade.findMany({
+        take: 5,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          direction: true,
+          status: true,
+          riskPercent: true,
+          thesis: true,
+          createdAt: true,
+          asset: { select: { symbol: true } },
+        },
+      }),
+      prisma.tradeNote.findMany({
+        take: 3,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          content: true,
+          screenshotUrls: true,
+          createdAt: true,
+          user: { select: { name: true } },
+          trade: { select: { asset: { select: { symbol: true } } } },
+        },
+      }),
+      prisma.trade.findMany({
+        where: { status: TradeStatus.OPEN },
+        select: { riskPercent: true },
+      }),
+    ]);
+
+    const tradeCounts = {
+      PLANNED: 0,
+      OPEN: 0,
+      CLOSED: 0,
+      CANCELLED: 0,
+    };
+
+    tradeStatusRows.forEach((row) => {
+      tradeCounts[row.status] = row._count._all;
+    });
+
+    const watchlistItems: WatchlistSnapshotItem[] = (watchlist?.items ?? [])
+      .slice(0, 6)
+      .map((item) => ({
+        id: item.id,
+        symbol: item.asset.symbol,
+        type: item.asset.type,
+        bias: item.bias,
+        importantLevel: item.importantLevel,
+        notes: item.notes,
+      }));
+
+    const biasCounts = { BULLISH: 0, BEARISH: 0, NEUTRAL: 0, NOT_SET: 0 };
+
+    (watchlist?.items ?? []).forEach((item) => {
+      if (item.bias) {
+        biasCounts[item.bias] += 1;
+      } else {
+        biasCounts.NOT_SET += 1;
+      }
+    });
+
+    const tradeItems: TradeDeskItem[] = recentTrades.map((trade) => ({
+      id: trade.id,
+      symbol: trade.asset.symbol,
+      direction: trade.direction,
+      status: trade.status,
+      riskPercent: trade.riskPercent?.toString() ?? null,
+      thesis: trade.thesis,
+      createdAt: trade.createdAt.toISOString(),
+    }));
+
+    const noteItems: RecentTradeNote[] = recentNotes.map((note) => ({
+      id: note.id,
+      symbol: note.trade.asset.symbol,
+      author: note.user.name,
+      content: note.content,
+      screenshotCount: note.screenshotUrls.length,
+      createdAt: note.createdAt.toISOString(),
+    }));
+
+    const openRiskValues = openTrades
+      .map((trade) => trade.riskPercent?.toNumber())
+      .filter((value): value is number => value !== undefined && Number.isFinite(value));
+
+    const tradeStatuses: DistributionItem[] = [
+      { label: "Planned", value: tradeCounts.PLANNED, color: "bg-[#8f9b91]" },
+      { label: "Open", value: tradeCounts.OPEN, color: "bg-[#9daf93]" },
+      { label: "Closed", value: tradeCounts.CLOSED, color: "bg-[#71838e]" },
+      { label: "Cancelled", value: tradeCounts.CANCELLED, color: "bg-[#986f70]" },
+    ];
+
+    const watchlistBiases: DistributionItem[] = [
+      { label: "Bullish", value: biasCounts.BULLISH, color: "bg-[#91a486]" },
+      { label: "Bearish", value: biasCounts.BEARISH, color: "bg-[#a97874]" },
+      { label: "Neutral", value: biasCounts.NEUTRAL, color: "bg-[#7b8882]" },
+      { label: "Not set", value: biasCounts.NOT_SET, color: "bg-[#4f5955]" },
+    ];
+
+    return {
+      databaseError: false,
+      watchlistName: watchlist?.name ?? null,
+      watchlistItems,
+      watchlistTotal: watchlist?.items.length ?? 0,
+      latestAsset: watchlist?.items[0]
+        ? {
+            symbol: watchlist.items[0].asset.symbol,
+            updatedAt: watchlist.items[0].updatedAt.toISOString(),
+          }
+        : null,
+      tradeCounts,
+      tradeItems,
+      noteItems,
+      tradeStatuses,
+      watchlistBiases,
+      openTradeCount: openTrades.length,
+      sizedOpenTradeCount: openRiskValues.length,
+      openRiskTotal: openRiskValues.reduce((sum, value) => sum + value, 0),
+      largestOpenRisk: openRiskValues.length > 0 ? Math.max(...openRiskValues) : 0,
+    };
+  } catch (error) {
+    console.error("Unable to load dashboard data", error);
+    return null;
+  }
+}
+
+export default async function DashboardPage() {
+  const data = await getDashboardData();
+
   return (
     <>
       <PageHeader
-        eyebrow="Overview / Static preview"
-        title="Dashboard"
-        description="A compact view of the trading day. All values below are placeholders for the initial interface."
+        eyebrow="Desk / Home"
+        title="Desk overview"
+        description="A quick read of the shared watchlist, active trade workflow and the latest journal context."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Market Regime" value="Risk neutral" detail="Placeholder assessment" />
-        <StatCard label="Macro Events" value="3 today" detail="Static calendar preview" tone="negative" />
-        <StatCard label="Watchlist" value="8 assets" detail="No live market data" tone="positive" />
-        <StatCard label="Checklist" value="2 / 5" detail="Example workflow state" />
-      </div>
+      {!data ? (
+        <section className="desk-surface px-6 py-16 text-center">
+          <span className="mx-auto block h-px w-8 bg-[#56615b]" />
+          <h2 className="mt-5 text-[15px] font-semibold text-[#d9ddda]">Dashboard unavailable</h2>
+          <p className="mx-auto mt-2 max-w-lg text-[13px] leading-6 text-[#78827e]">
+            The desk cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page.
+          </p>
+        </section>
+      ) : (
+        <div className="space-y-8">
+          <DashboardStats
+            watchlistAssets={data.watchlistTotal}
+            plannedTrades={data.tradeCounts.PLANNED}
+            openTrades={data.tradeCounts.OPEN}
+            closedTrades={data.tradeCounts.CLOSED}
+            latestAsset={data.latestAsset}
+          />
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-[1.4fr_1fr]">
-        <SectionCard title="Today’s Macro Events" description="Future economic calendar and impact tracking.">
-          <div className="space-y-3 font-mono text-xs text-slate-400">
-            <div className="flex justify-between border-b border-slate-800 pb-3"><span>08:30 · CPI release</span><span className="text-rose-300">HIGH</span></div>
-            <div className="flex justify-between border-b border-slate-800 pb-3"><span>14:00 · Central bank speech</span><span className="text-amber-300">MED</span></div>
-            <div className="flex justify-between"><span>16:30 · Inventories</span><span className="text-slate-500">LOW</span></div>
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <WatchlistSnapshot watchlistName={data.watchlistName} items={data.watchlistItems} />
+            <TradeDeskSnapshot trades={data.tradeItems} notes={data.noteItems} />
           </div>
-        </SectionCard>
 
-        <SectionCard title="Trading Checklist" description="Future pre-trade validation workflow.">
-          <ul className="space-y-3 text-sm text-slate-400">
-            <li>□ Macro bias reviewed</li>
-            <li>□ Key levels mapped</li>
-            <li>□ Risk defined</li>
-            <li>□ Entry thesis written</li>
-          </ul>
-        </SectionCard>
+          <section>
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Internal data</p>
+                <h2 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[#e6eae7]">Desk Visuals</h2>
+              </div>
+              <p className="hidden text-[10px] text-[#626d68] sm:block">No external market feed</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <DeskVisuals
+                tradeStatuses={data.tradeStatuses}
+                watchlistBiases={data.watchlistBiases}
+                openRiskTotal={data.openRiskTotal}
+                largestOpenRisk={data.largestOpenRisk}
+                openTradeCount={data.openTradeCount}
+                sizedOpenTradeCount={data.sizedOpenTradeCount}
+              />
+              <MarketRegimeCard />
+            </div>
+          </section>
 
-        <SectionCard title="Watchlist Snapshot" description="Future instruments and context monitoring.">
-          <p className="text-sm leading-6 text-slate-500">EUR/USD, S&amp;P 500, Gold and US 10Y will appear here once market data is introduced.</p>
-        </SectionCard>
-
-        <SectionCard title="Latest Notes" description="Future journal and research excerpts.">
-          <p className="text-sm italic leading-6 text-slate-500">“No notes yet — this is a static interface placeholder.”</p>
-        </SectionCard>
-      </div>
+          <PreTradeChecklist />
+        </div>
+      )}
     </>
   );
 }

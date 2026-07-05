@@ -9,11 +9,13 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-transparent text-slate-100 lg:grid lg:grid-cols-[240px_1fr]">
+    <div className="min-h-screen w-full min-w-0 max-w-full overflow-x-hidden bg-[var(--canvas)] text-[var(--text)] lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
       <Sidebar />
-      <div className="min-w-0">
+      <div className="w-full min-w-0 max-w-full overflow-x-hidden">
         <Topbar />
-        <main className="mx-auto w-full max-w-[1600px] p-5 sm:p-7 lg:p-10">{children}</main>
+        <main className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
+          {children}
+        </main>
       </div>
     </div>
   );

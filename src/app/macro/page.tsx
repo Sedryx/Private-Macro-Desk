@@ -1,6 +1,23 @@
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlannedList } from "@/components/ui/PlannedList";
 import { SectionCard } from "@/components/ui/SectionCard";
 
 export default function MacroPage() {
-  return <><PageHeader eyebrow="Economy" title="Macro" description="Track the economic backdrop and the indicators that shape the trading regime." /><div className="grid gap-4 lg:grid-cols-2"><SectionCard title="Economic Indicators" description="Rates, inflation, employment, GDP and PMI will be grouped here." /><SectionCard title="Macro Regime" description="A concise view of growth and inflation dynamics will live here." /></div></>;
+  return (
+    <>
+      <PageHeader
+        eyebrow="Markets / Economy"
+        title="Macro backdrop"
+        description="A focused view of the forces shaping growth, inflation and policy. This workspace arrives in Phase 2."
+      />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <SectionCard title="Economic pulse" description="The indicators that matter, without turning the desk into a data warehouse." meta="Phase 2">
+          <PlannedList items={["Rates and inflation", "Labour and growth", "PMI and activity"]} note="Historical data will use free, documented sources." />
+        </SectionCard>
+        <SectionCard title="Regime notes" description="A concise written view of what is changing and why it matters." meta="Phase 2">
+          <PlannedList items={["Growth direction", "Inflation pressure", "Policy impulse"]} note="No automated buy or sell signal will be generated here." />
+        </SectionCard>
+      </div>
+    </>
+  );
 }

@@ -1,13 +1,16 @@
 export function Topbar() {
   return (
-    <header className="flex min-h-20 items-center justify-between gap-4 border-b border-slate-800/80 bg-[#080b10]/80 px-5 backdrop-blur sm:px-7 lg:px-10">
-      <div>
-        <h1 className="text-sm font-semibold tracking-wide text-slate-100 sm:text-base">Private Macro Desk</h1>
-        <p className="mt-0.5 text-xs text-slate-500">Private trading cockpit</p>
+    <header className="sticky top-0 z-20 flex min-h-[68px] min-w-0 max-w-full items-center justify-between gap-4 overflow-hidden border-b border-[var(--line)] bg-[rgba(11,15,19,0.9)] px-5 backdrop-blur-md sm:px-8 lg:px-12">
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-[#cbd1cd]">Shared trading workspace</p>
+        <p className="mt-0.5 hidden text-[11px] text-[#6f7975] sm:block">
+          Context first. Decisions second.
+        </p>
       </div>
-      <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-emerald-300">
-        Private / 2 users
-      </span>
+      <div className="flex shrink-0 items-center gap-2 rounded-full border border-[var(--line)] bg-[#11171c] px-3 py-1.5 text-[11px] text-[#919b96]">
+        <span className="size-1.5 rounded-full bg-[#9cab91]" />
+        Private <span className="hidden sm:inline">· 2 users</span>
+      </div>
     </header>
   );
 }

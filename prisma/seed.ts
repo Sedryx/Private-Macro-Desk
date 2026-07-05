@@ -56,21 +56,39 @@ async function main() {
     },
   });
 
+  const seededAssets = [];
+
   for (const asset of assets) {
-    await prisma.asset.upsert({
+    const seededAsset = await prisma.asset.upsert({
       where: { symbol_type: { symbol: asset.symbol, type: asset.type } },
       update: asset,
       create: asset,
     });
+
+    seededAssets.push(seededAsset);
   }
 
-  const mainWatchlist = await prisma.watchlist.findFirst({
-    where: { name: "Main Watchlist", userId: joachim.id },
-  });
-
-  if (!mainWatchlist) {
-    await prisma.watchlist.create({
+  const mainWatchlist =
+    (await prisma.watchlist.findFirst({
+      where: { name: "Main Watchlist", userId: joachim.id },
+    })) ??
+    (await prisma.watchlist.create({
       data: { name: "Main Watchlist", userId: joachim.id },
+    }));
+
+  for (const asset of seededAssets) {
+    await prisma.watchlistItem.upsert({
+      where: {
+        watchlistId_assetId: {
+          watchlistId: mainWatchlist.id,
+          assetId: asset.id,
+        },
+      },
+      update: {},
+      create: {
+        watchlistId: mainWatchlist.id,
+        assetId: asset.id,
+      },
     });
   }
 

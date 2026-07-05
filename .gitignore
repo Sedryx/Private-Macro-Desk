@@ -13,6 +13,9 @@
 # production
 /build
 
+# private uploaded files
+/public/uploads/
+
 # local environment files
 .env*
 !.env.example

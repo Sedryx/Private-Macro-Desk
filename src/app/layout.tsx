@@ -7,7 +7,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Private Macro Desk",
-  description: "Private trading cockpit",
+  description: "A private workspace for market preparation and trade review.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
