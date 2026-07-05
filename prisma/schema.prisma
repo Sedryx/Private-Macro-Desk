@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  MEMBER
+}
+
+enum AssetType {
+  STOCK
+  ETF
+  INDEX
+  FOREX
+  CRYPTO
+  COMMODITY
+  RATE
+}
+
+enum Bias {
+  BULLISH
+  BEARISH
+  NEUTRAL
+}
+
+enum TradeDirection {
+  LONG
+  SHORT
+}
+
+enum TradeStatus {
+  PLANNED
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum MacroCategory {
+  RATES
+  INFLATION
+  LABOR
+  GROWTH
+  PMI
+  CENTRAL_BANK
+  OTHER
+}
+
+enum EventImportance {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum DocumentType {
+  PDF
+  FILING
+  NOTE
+  ARTICLE
+  OTHER
+}
+
+model User {
+  id                String             @id @default(cuid())
+  name              String
+  email             String             @unique
+  role              UserRole           @default(MEMBER)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  watchlists        Watchlist[]
+  trades            Trade[]
+  tradeNotes        TradeNote[]
+  researchDocuments ResearchDocument[]
+}
+
+model Asset {
+  id             String          @id @default(cuid())
+  symbol         String
+  name           String
+  type           AssetType
+  exchange       String?
+  currency       String?
+  country        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  watchlistItems WatchlistItem[]
+  trades         Trade[]
+
+  @@unique([symbol, type])
+  @@index([symbol])
+}
+
+model Watchlist {
+  id        String          @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     WatchlistItem[]
+}
+
+model WatchlistItem {
+  id             String    @id @default(cuid())
+  watchlistId    String
+  assetId        String
+  bias           Bias?
+  notes          String?
+  importantLevel String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  watchlist      Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  asset          Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([watchlistId, assetId])
+}
+
+model Trade {
+  id           String         @id @default(cuid())
+  userId       String
+  assetId      String
+  direction    TradeDirection
+  status       TradeStatus    @default(PLANNED)
+  entryPrice   Decimal?
+  stopLoss     Decimal?
+  takeProfit   Decimal?
+  riskPercent  Decimal?
+  thesis       String
+  invalidation String?
+  result       String?
+  mistakeTags  String[]       @default([])
+  openedAt     DateTime?
+  closedAt     DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset        Asset          @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  notes        TradeNote[]
+
+  @@index([userId])
+  @@index([assetId])
+}
+
+model TradeNote {
+  id        String   @id @default(cuid())
+  tradeId   String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  trade     Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MacroIndicator {
+  id        String        @id @default(cuid())
+  code      String        @unique
+  name      String
+  country   String?
+  category  MacroCategory
+  unit      String?
+  source    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  values    MacroValue[]
+}
+
+model MacroValue {
+  id          String         @id @default(cuid())
+  indicatorId String
+  date        DateTime
+  value       Decimal
+  createdAt   DateTime       @default(now())
+  indicator   MacroIndicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+
+  @@unique([indicatorId, date])
+  @@index([date])
+}
+
+model EconomicEvent {
+  id            String          @id @default(cuid())
+  title         String
+  country       String?
+  importance    EventImportance
+  eventTime     DateTime
+  previousValue String?
+  forecastValue String?
+  actualValue   String?
+  source        String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([eventTime])
+}
+
+model ResearchDocument {
+  id           String          @id @default(cuid())
+  title        String
+  type         DocumentType
+  source       String?
+  fileUrl      String?
+  uploadedById String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  uploadedBy   User            @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  chunks       ResearchChunk[]
+}
+
+model ResearchChunk {
+  id         String           @id @default(cuid())
+  documentId String
+  content    String
+  pageNumber Int?
+  createdAt  DateTime         @default(now())
+  document   ResearchDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
