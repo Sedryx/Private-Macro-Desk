@@ -28,17 +28,11 @@ const assets = [
 ] as const;
 
 const indicators = [
-  { code: "FEDFUNDS", name: "Federal Funds Rate", country: "US", category: MacroCategory.RATES, unit: "%", source: "Demo seed - not live" },
-  { code: "US_CPI", name: "US CPI Inflation (YoY)", country: "US", category: MacroCategory.INFLATION, unit: "%", source: "Demo seed - not live" },
-  { code: "US_UNEMPLOYMENT", name: "US Unemployment Rate", country: "US", category: MacroCategory.LABOR, unit: "%", source: "Demo seed - not live" },
   { code: "ECB_DEPOSIT_RATE", name: "ECB Deposit Facility Rate", country: "EU", category: MacroCategory.CENTRAL_BANK, unit: "%", source: "Demo seed - not live" },
   { code: "SNB_POLICY_RATE", name: "SNB Policy Rate", country: "CH", category: MacroCategory.CENTRAL_BANK, unit: "%", source: "Demo seed - not live" },
 ] as const;
 
 const macroSeries: Record<(typeof indicators)[number]["code"], number[]> = {
-  FEDFUNDS: [5.25, 5.25, 5.25, 5.0, 4.75, 4.75, 4.5, 4.5, 4.25, 4.25, 4.0, 4.0, 3.75, 3.75, 3.5, 3.5, 3.25, 3.25],
-  US_CPI: [3.4, 3.2, 3.1, 3.0, 2.9, 3.0, 2.8, 2.7, 2.6, 2.5, 2.6, 2.4, 2.3, 2.4, 2.2, 2.1, 2.0, 2.1],
-  US_UNEMPLOYMENT: [3.7, 3.8, 3.8, 3.9, 4.0, 4.0, 4.1, 4.1, 4.2, 4.1, 4.2, 4.2, 4.1, 4.1, 4.0, 4.0, 3.9, 3.9],
   ECB_DEPOSIT_RATE: [4.0, 4.0, 3.75, 3.75, 3.5, 3.5, 3.25, 3.25, 3.0, 3.0, 2.75, 2.75, 2.5, 2.5, 2.25, 2.25, 2.0, 2.0],
   SNB_POLICY_RATE: [1.75, 1.75, 1.5, 1.5, 1.25, 1.25, 1.0, 1.0, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.25],
 };

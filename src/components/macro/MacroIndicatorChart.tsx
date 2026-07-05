@@ -10,48 +10,25 @@ import {
   YAxis,
 } from "recharts";
 
-export type MacroChartPoint = {
-  date: string;
-  value: number;
-};
-
-const monthFormatter = new Intl.DateTimeFormat("en-GB", {
-  month: "short",
-  year: "2-digit",
-  timeZone: "UTC",
-});
-
-const tooltipDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  month: "long",
-  year: "numeric",
-  timeZone: "UTC",
-});
+import type { MacroTrendPoint } from "@/lib/macroProfiles";
 
 export function MacroIndicatorChart({
   points,
-  unit,
-  color,
+  color = "#9daf93",
 }: {
-  points: MacroChartPoint[];
-  unit: string | null;
-  color: string;
+  points: MacroTrendPoint[];
+  color?: string;
 }) {
-  const chartData = points.map((point) => ({
-    date: point.date,
-    label: monthFormatter.format(new Date(point.date)),
-    value: point.value,
-  }));
-
   return (
-    <div className="h-[220px] w-full min-w-0" aria-label="Historical demo series chart">
+    <div className="h-[260px] w-full min-w-0 sm:h-[300px]" aria-label="Demo macro trend chart">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -12 }} accessibilityLayer>
+        <LineChart data={points} margin={{ top: 12, right: 12, bottom: 0, left: -10 }} accessibilityLayer>
           <CartesianGrid stroke="#273036" strokeDasharray="3 5" vertical={false} />
           <XAxis
             dataKey="label"
             axisLine={false}
             tickLine={false}
-            minTickGap={26}
+            minTickGap={22}
             tick={{ fill: "#66716c", fontSize: 9 }}
           />
           <YAxis
@@ -72,11 +49,7 @@ export function MacroIndicatorChart({
               fontSize: 11,
               boxShadow: "0 12px 30px rgba(0,0,0,.28)",
             }}
-            labelFormatter={(_label, payload) => {
-              const date = payload[0]?.payload?.date;
-              return date ? tooltipDateFormatter.format(new Date(date)) : "";
-            }}
-            formatter={(value) => [`${Number(value).toFixed(2)}${unit ? ` ${unit}` : ""}`, "Demo value"]}
+            formatter={(value) => [Number(value).toFixed(2), "Value"]}
           />
           <Line
             type="monotone"
