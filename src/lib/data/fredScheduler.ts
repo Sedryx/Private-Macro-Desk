@@ -1,6 +1,7 @@
 import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
 import { syncEuroAreaData } from "@/lib/data/euroAreaSync";
 import { FRED_SERIES, syncFredSeries } from "@/lib/data/fred";
+import { syncSecResearchDocuments } from "@/lib/data/secResearch";
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const INITIAL_CHECK_DELAY_MS = 30 * 1000;
@@ -14,6 +15,7 @@ type SchedulerState = {
   timer?: ReturnType<typeof setInterval>;
   initialCheck?: ReturnType<typeof setTimeout>;
   running?: Promise<unknown>;
+  researchRunning?: Promise<unknown>;
 };
 
 const globalForMacroScheduler = globalThis as typeof globalThis & {
@@ -34,6 +36,16 @@ export function startFredScheduler() {
       .finally(() => {
         state.running = undefined;
       });
+
+    if (!state.researchRunning) {
+      state.researchRunning = syncResearchIfStale()
+        .catch((error: unknown) => {
+          console.error("[Research scheduler] Sync failed:", errorMessage(error));
+        })
+        .finally(() => {
+          state.researchRunning = undefined;
+        });
+    }
   };
 
   state.initialCheck = setTimeout(checkAndSync, INITIAL_CHECK_DELAY_MS);
@@ -41,6 +53,7 @@ export function startFredScheduler() {
   state.timer = setInterval(checkAndSync, TWO_HOURS_MS);
   state.timer.unref();
   console.log("[Macro scheduler] Official Euro Area + US FRED sync enabled every 2 hours.");
+  console.log("[Research scheduler] SEC EDGAR sync enabled every 2 hours when SEC_USER_AGENT is configured.");
 }
 
 export async function syncMacroIfStale(force = false) {
@@ -94,6 +107,28 @@ export async function syncMacroIfStale(force = false) {
 }
 
 export const syncFredIfStale = syncMacroIfStale;
+
+export async function syncResearchIfStale(force = false) {
+  const { prisma } = await import("@/lib/prisma");
+  const latestDocument = await prisma.researchDocument.findFirst({
+    where: { provider: "SEC EDGAR" },
+    orderBy: { updatedAt: "desc" },
+    select: { updatedAt: true },
+  });
+  const fresh = latestDocument !== null && Date.now() - latestDocument.updatedAt.getTime() < TWO_HOURS_MS;
+
+  if (!force && fresh) {
+    console.log("[Research scheduler] SEC EDGAR documents are still fresh; sync skipped.");
+    return { status: "fresh" as const };
+  }
+
+  console.log("[Research scheduler] Refreshing SEC EDGAR documents...");
+  const result = await syncSecResearchDocuments();
+  console.log(
+    `[Research scheduler] SEC EDGAR refresh ${result.status}: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`,
+  );
+  return result;
+}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown sync error";
