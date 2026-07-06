@@ -25,6 +25,7 @@ export function WatchlistSection({
 }) {
   const [expanded, setExpanded] = useState(true);
   const [renaming, setRenaming] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [renameState, renameAction, renamePending] = useActionState(
     renameWatchlist,
     initialState,
@@ -97,21 +98,33 @@ export function WatchlistSection({
               >
                 Rename
               </button>
-              <form action={deleteAction}>
-                <input type="hidden" name="watchlistId" value={watchlist.id} />
+              {confirmingDelete ? (
+                <form action={deleteAction} className="flex items-center gap-1">
+                  <input type="hidden" name="watchlistId" value={watchlist.id} />
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingDelete(false)}
+                    className="rounded-md px-2 py-1 text-[10px] text-[#7f8a85] hover:bg-[#192025] hover:text-[#c7ceca]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deletePending}
+                    className="rounded-md bg-[#28191b] px-2 py-1 text-[10px] font-medium text-[#d59b9b] hover:bg-[#321d20] disabled:opacity-50"
+                  >
+                    {deletePending ? "Deleting..." : "Confirm delete"}
+                  </button>
+                </form>
+              ) : (
                 <button
-                  type="submit"
-                  disabled={deletePending}
-                  onClick={(event) => {
-                    if (!window.confirm(`Delete ${watchlist.name}?`)) {
-                      event.preventDefault();
-                    }
-                  }}
+                  type="button"
+                  onClick={() => setConfirmingDelete(true)}
                   className="rounded-md px-2 py-1 text-[10px] text-[#a77878] hover:bg-[#24191b] hover:text-[#d59b9b] disabled:opacity-50"
                 >
-                  {deletePending ? "Deleting..." : "Delete"}
+                  Delete
                 </button>
-              </form>
+              )}
             </>
           ) : null}
           <button

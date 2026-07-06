@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "data:fred": "tsx scripts/sync-fred.ts",
-    "data:macro": "tsx scripts/sync-macro.ts"
+    "data:macro": "tsx scripts/sync-macro.ts",
+    "data:calendar": "tsx scripts/sync-forex-factory-calendar.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

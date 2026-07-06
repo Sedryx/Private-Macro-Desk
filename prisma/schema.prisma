@@ -185,18 +185,23 @@ model MacroValue {
 
 model EconomicEvent {
   id            String          @id @default(cuid())
+  externalId    String?
+  provider      String?
   title         String
   country       String?
+  currency      String?
   importance    EventImportance
   eventTime     DateTime
   previousValue String?
   forecastValue String?
   actualValue   String?
+  expectedImpact String?
   source        String?
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
   @@index([eventTime])
+  @@unique([provider, externalId])
 }
 
 model ResearchDocument {

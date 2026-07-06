@@ -82,7 +82,12 @@ export async function deleteWatchlist(
     const watchlist = await findOwnedWatchlist(watchlistId);
     if (!watchlist) return error("Watchlist not found.");
 
-    await prisma.watchlist.delete({ where: { id: watchlist.id } });
+    await prisma.$transaction(async (transaction) => {
+      await transaction.watchlistItem.deleteMany({
+        where: { watchlistId: watchlist.id },
+      });
+      await transaction.watchlist.delete({ where: { id: watchlist.id } });
+    });
     revalidateWatchlist();
     return success("Watchlist deleted.");
   } catch (caught) {
