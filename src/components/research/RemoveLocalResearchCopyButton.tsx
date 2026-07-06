@@ -1,13 +1,13 @@
 "use client";
 
-import { deleteResearchDocument } from "@/app/research/actions";
+import { removeResearchDocumentLocalCopy } from "@/app/research/actions";
 
-export function DeleteResearchDocumentButton({ documentId, title }: { documentId: string; title: string }) {
+export function RemoveLocalResearchCopyButton({ documentId, title }: { documentId: string; title: string }) {
   return (
     <form
-      action={deleteResearchDocument}
+      action={removeResearchDocumentLocalCopy}
       onSubmit={(event) => {
-        if (!window.confirm(`Delete research document "${title}"?`)) {
+        if (!window.confirm(`Remove local copy of "${title}"? It can be synced again later.`)) {
           event.preventDefault();
         }
       }}
@@ -17,7 +17,7 @@ export function DeleteResearchDocumentButton({ documentId, title }: { documentId
         type="submit"
         className="rounded-md border border-[#513232] bg-[#1d1010] px-3 py-2 text-[11px] text-[#e09a9a] transition hover:border-[#7a3f3f] hover:text-white"
       >
-        Delete
+        Remove local copy
       </button>
     </form>
   );

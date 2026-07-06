@@ -1,63 +1,59 @@
-import { ResearchDocumentForm } from "@/components/research/ResearchDocumentForm";
-import { ResearchDocumentList, type ResearchDocumentItem } from "@/components/research/ResearchDocumentList";
+import { OfficialResearchDocumentList, type OfficialResearchDocumentItem } from "@/components/research/OfficialResearchDocumentList";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-async function getResearchData() {
+async function getOfficialResearchDocuments() {
   try {
-    const [documents, users] = await Promise.all([
-      prisma.researchDocument.findMany({
-        orderBy: { createdAt: "desc" },
-        include: {
-          uploadedBy: { select: { id: true, name: true, email: true } },
-          chunks: { orderBy: { createdAt: "asc" }, select: { id: true, content: true, pageNumber: true, createdAt: true } },
-        },
-      }),
-      prisma.user.findMany({
-        orderBy: { name: "asc" },
-        select: { id: true, name: true, email: true },
-      }),
-    ]);
+    const documents = await prisma.researchDocument.findMany({
+      where: {
+        provider: { not: null },
+      },
+      orderBy: [{ filedAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        ticker: true,
+        title: true,
+        companyName: true,
+        formType: true,
+        filedAt: true,
+        reportDate: true,
+        provider: true,
+        sourceUrl: true,
+        fileUrl: true,
+      },
+    });
 
-    return {
-      documents: documents.map((document): ResearchDocumentItem => ({
-        id: document.id,
-        title: document.title,
-        type: document.type,
-        source: document.source,
-        fileUrl: document.fileUrl,
-        createdAt: document.createdAt.toISOString(),
-        updatedAt: document.updatedAt.toISOString(),
-        uploadedBy: document.uploadedBy,
-        chunks: document.chunks.map((chunk) => ({
-          id: chunk.id,
-          content: chunk.content,
-          pageNumber: chunk.pageNumber,
-          createdAt: chunk.createdAt.toISOString(),
-        })),
-      })),
-      users,
-    };
+    return documents.map((document): OfficialResearchDocumentItem => ({
+      id: document.id,
+      ticker: document.ticker,
+      title: document.title,
+      companyName: document.companyName,
+      formType: document.formType,
+      filedAt: document.filedAt?.toISOString() ?? null,
+      reportDate: document.reportDate?.toISOString() ?? null,
+      provider: document.provider,
+      sourceUrl: document.sourceUrl ?? document.fileUrl,
+    }));
   } catch (error) {
-    console.error("Unable to load research library", error);
+    console.error("Unable to load official research documents", error);
     return null;
   }
 }
 
 export default async function ResearchPage() {
-  const data = await getResearchData();
+  const documents = await getOfficialResearchDocuments();
 
   return (
     <>
       <PageHeader
-        eyebrow="Workspace / Documents"
+        eyebrow="Research / Official docs"
         title="Research library"
-        description="A private home for source-backed notes, documents and links. No AI or PDF parsing yet."
+        description="Official source documents synced into the desk. No manual notes, uploads, PDF parsing or AI here yet."
       />
 
-      {!data ? (
+      {!documents ? (
         <section className="desk-surface px-6 py-16 text-center">
           <span className="mx-auto block h-px w-8 bg-[#56615b]" />
           <h2 className="mt-5 text-[15px] font-semibold text-[#d9ddda]">Research library unavailable</h2>
@@ -66,10 +62,7 @@ export default async function ResearchPage() {
           </p>
         </section>
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[minmax(340px,0.42fr)_minmax(0,0.58fr)]">
-          <ResearchDocumentForm users={data.users} />
-          <ResearchDocumentList documents={data.documents} />
-        </div>
+        <OfficialResearchDocumentList documents={documents} />
       )}
     </>
   );
