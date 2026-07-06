@@ -1,11 +1,5 @@
 import type { CountryMacroProfile } from "@/lib/macroProfiles";
 
-const stanceStyles = {
-  tight: "border-[#574a3d] bg-[#241d18] text-[#c4a77f]",
-  neutral: "border-[#3c484d] bg-[#172126] text-[#9fb0b7]",
-  easing: "border-[#3e4d40] bg-[#18221a] text-[#a8bc9f]",
-};
-
 export function GlobalMacroOverview({ profiles }: { profiles: CountryMacroProfile[] }) {
   return (
     <section>
@@ -14,7 +8,6 @@ export function GlobalMacroOverview({ profiles }: { profiles: CountryMacroProfil
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#7e8a84]">Cross-country monitor</p>
           <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-[#e7ebe8]">Global policy board</h2>
         </div>
-        <p className="text-[10px] text-[#65706b]">USA and Euro Area live · other regions coming soon</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -27,9 +20,6 @@ export function GlobalMacroOverview({ profiles }: { profiles: CountryMacroProfil
                 <p className="mt-1 text-[9px] text-[#68736e]">{profile.centralBank}</p>
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <span className={`rounded-full border px-2 py-1 text-[8px] font-semibold ${stanceStyles[profile.stanceTone]}`}>
-                  {profile.stance}
-                </span>
                 <SourceBadge profile={profile} />
               </div>
             </div>

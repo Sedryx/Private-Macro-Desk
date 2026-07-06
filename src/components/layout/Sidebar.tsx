@@ -20,13 +20,8 @@ export function Sidebar() {
           <span className="grid size-9 place-items-center rounded-[10px] border border-[#3a433e] bg-[#171d1b] text-[11px] font-semibold tracking-[0.08em] text-[#cbd5c5] transition group-hover:border-[#515e55]">
             PM
           </span>
-          <span>
-            <span className="block text-[14px] font-semibold tracking-[-0.01em] text-[#eef1ee]">
-              Private Macro Desk
-            </span>
-            <span className="mt-0.5 block text-[11px] text-[var(--text-muted)]">
-              Two-person workspace
-            </span>
+          <span className="block text-[14px] font-semibold tracking-[-0.01em] text-[#eef1ee]">
+            Private Macro Desk
           </span>
         </Link>
       </div>
@@ -68,18 +63,6 @@ export function Sidebar() {
           </div>
         ))}
       </nav>
-
-      <div className="hidden px-6 pb-6 lg:block">
-        <div className="rounded-xl border border-[var(--line)] bg-[#11171c] px-4 py-3.5">
-          <div className="flex items-center gap-2 text-[11px] font-medium text-[#aab3ae]">
-            <span className="size-1.5 rounded-full bg-[#98aa8d]" />
-            Private workspace
-          </div>
-          <p className="mt-1.5 text-[11px] leading-4 text-[#66716c]">
-            Built for preparation, decisions and review.
-          </p>
-        </div>
-      </div>
     </aside>
   );
 }

@@ -10,12 +10,6 @@ import {
   type MacroSource,
 } from "@/lib/macroProfiles";
 
-const stanceStyles = {
-  tight: "border-[#574a3d] bg-[#241d18] text-[#c4a77f]",
-  neutral: "border-[#3c484d] bg-[#172126] text-[#9fb0b7]",
-  easing: "border-[#3e4d40] bg-[#18221a] text-[#a8bc9f]",
-};
-
 export function CountryMacroProfileView({ profile }: { profile: CountryMacroProfile }) {
   const [activeSection, setActiveSection] = useState<MacroSectionKey>("centralBank");
   const [activeMetricId, setActiveMetricId] = useState(
@@ -26,11 +20,6 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
   const activeMetric =
     section.indicators.find((indicator) => indicator.id === activeMetricId) ??
     section.indicators[0];
-  const profileSources = Object.values(profile.sections).flatMap((macroSection) =>
-    macroSection.indicators.map((indicator) => indicator.source),
-  );
-  const sourceLabel = getProfileSourceLabel(profile.countryCode, profileSources);
-
   function selectSection(key: MacroSectionKey) {
     setActiveSection(key);
     setActiveMetricId(profile.sections[key].indicators[0]?.id ?? "");
@@ -41,21 +30,9 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
       <section className="desk-surface overflow-hidden">
         <div className="grid gap-5 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-md border border-[#354039] bg-[#172019] px-2 py-1 text-[9px] font-semibold tracking-[0.12em] text-[#a9bba1]">
-                {profile.countryCode}
-              </span>
-              <span className={`rounded-full border px-2.5 py-1 text-[9px] font-semibold ${stanceStyles[profile.stanceTone]}`}>
-                {profile.stance}
-              </span>
-              <SourceBadge source={sourceLabel} large />
-            </div>
-            <h2 className="mt-4 text-2xl font-semibold tracking-[-0.035em] text-[#edf0ed]">
+            <h2 className="text-2xl font-semibold tracking-[-0.035em] text-[#edf0ed]">
               {profile.country}
             </h2>
-            <p className="mt-2 max-w-3xl text-[13px] leading-6 text-[#8b9690]">
-              {profile.summary}
-            </p>
           </div>
           <dl className="grid grid-cols-2 gap-x-8 gap-y-3 border-t border-[var(--line)] pt-4 sm:grid-cols-4 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
             <HeaderMetric label="Central bank" value={profile.centralBank} />
@@ -233,10 +210,8 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
 
 function SourceBadge({
   source,
-  large = false,
 }: {
   source: MacroSource | "FRED / partial";
-  large?: boolean;
 }) {
   const styles =
     source === "Live data" || source === "FRED" || source === "ECB" ||
@@ -255,25 +230,11 @@ function SourceBadge({
 
   return (
     <span
-      className={`inline-block rounded-full border font-semibold ${styles} ${
-        large ? "px-2.5 py-1 text-[8px]" : "px-1.5 py-0.5 text-[7px]"
-      }`}
+      className={`inline-block rounded-full border px-1.5 py-0.5 text-[7px] font-semibold ${styles}`}
     >
       {source}
     </span>
   );
-}
-
-function getProfileSourceLabel(
-  countryCode: string,
-  sources: MacroSource[],
-): MacroSource | "FRED / partial" {
-  const hasLiveData = sources.some((source) =>
-    ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB"].includes(source),
-  );
-  if (hasLiveData) return "Live data";
-  if (countryCode === "US" || countryCode === "EU") return "Not connected";
-  return "Coming soon";
 }
 
 function StaleBadge() {
