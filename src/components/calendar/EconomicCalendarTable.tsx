@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 
 import type { EconomicEventView } from "@/components/calendar/types";
 
@@ -9,7 +9,7 @@ const impacts = ["HIGH", "MEDIUM", "LOW", "HOLIDAY"] as const;
 const currencies = ["USD", "EUR", "CHF", "GBP", "JPY", "CAD", "AUD", "NZD"] as const;
 type ImpactFilter = (typeof impacts)[number];
 type CurrencyFilter = (typeof currencies)[number];
-type RangeFilter = "today" | "tomorrow" | "this-week" | "next-week" | "previous-week";
+type RangeFilter = "today" | "tomorrow" | "this-week" | "next-week" | "previous-week" | "custom";
 
 export function EconomicCalendarTable({ events }: { events: EconomicEventView[] }) {
   const [range, setRange] = useState<RangeFilter>("this-week");
@@ -21,9 +21,12 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
   );
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const tableRef = useRef<HTMLElement>(null);
 
   const filteredEvents = useMemo(() => {
-    const bounds = getRangeBounds(range);
+    const bounds = getRangeBounds(range, customStart, customEnd);
     const query = search.trim().toLowerCase();
     return events.filter((event) => {
       const dateKey = zurichDateKey(new Date(event.eventTime));
@@ -35,12 +38,12 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
         selectedCurrencies.has(currency) &&
         (!query || event.title.toLowerCase().includes(query));
     });
-  }, [events, range, search, selectedCurrencies, selectedImpacts]);
+  }, [customEnd, customStart, events, range, search, selectedCurrencies, selectedImpacts]);
 
   return (
-    <section className="desk-surface overflow-hidden">
+    <section ref={tableRef} className="desk-surface overflow-hidden bg-[#141516] shadow-[inset_0_1px_0_rgba(255,255,255,.02)] fullscreen:overflow-auto fullscreen:rounded-none fullscreen:p-3">
       <div className="flex flex-col gap-3 border-b border-[var(--line)] px-4 py-3 sm:px-5 xl:flex-row xl:items-center xl:justify-between">
-        <p className="text-[10px] text-[#78837e]">Synced from Forex Factory weekly JSON export</p>
+        <p className="terminal-label">Calendar data // Forex Factory weekly</p>
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={range}
@@ -53,7 +56,26 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
             <option value="this-week">This week</option>
             <option value="next-week">Next week</option>
             <option value="previous-week">Previous week</option>
+            <option value="custom">Custom range</option>
           </select>
+          {range === "custom" ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(event) => setCustomStart(event.target.value)}
+                className="desk-field w-auto px-2 py-1.5 text-[10px]"
+                aria-label="Custom range start"
+              />
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(event) => setCustomEnd(event.target.value)}
+                className="desk-field w-auto px-2 py-1.5 text-[10px]"
+                aria-label="Custom range end"
+              />
+            </div>
+          ) : null}
           <MultiFilter
             label="Impact"
             options={impacts}
@@ -73,6 +95,13 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
             placeholder="Search event"
             className="desk-field w-40 px-2.5 py-1.5 text-[10px]"
           />
+          <button
+            type="button"
+            onClick={() => tableRef.current?.requestFullscreen()}
+            className="rounded-md border border-[#37383b] bg-[#111214] px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#89898b] hover:border-[#55565a] hover:text-white"
+          >
+            Fullscreen
+          </button>
         </div>
       </div>
 
@@ -83,7 +112,7 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1040px] border-collapse text-left">
-            <thead className="bg-[#0d1317]">
+            <thead className="bg-[#0d0e0f]">
               <tr className="border-b border-[var(--line)] text-[8px] uppercase tracking-[0.1em] text-[#59655f]">
                 <Header>Date</Header>
                 <Header>Time</Header>
@@ -106,7 +135,7 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                 return (
                   <Fragment key={event.id}>
                     {showDay ? (
-                      <tr className="border-b border-[var(--line)] bg-[#10171b]">
+                      <tr className="border-b border-[var(--line)] bg-[#111214]">
                         <td colSpan={10} className="px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#829087]">
                           {formatGroupDate(event.eventTime)}
                         </td>
@@ -123,7 +152,7 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                         }
                       }}
                       className={`cursor-pointer border-b border-[var(--line)] text-[11px] transition hover:bg-white/[0.025] ${
-                        event.impact === "HIGH" ? "bg-[#1b1416]" : "bg-[#11171b]"
+                        event.impact === "HIGH" ? "bg-[rgba(220,38,38,.07)]" : "bg-[#141516]"
                       }`}
                     >
                       <Cell muted>{formatShortDate(event.eventTime)}</Cell>
@@ -136,7 +165,11 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                         </div>
                       </Cell>
                       <Cell><ImpactBadge impact={event.impact} /></Cell>
-                      <Cell strong={Boolean(event.actualValue)}>{event.actualValue || "—"}</Cell>
+                      <Cell>
+                        <span className={actualTone(event.actualValue, event.forecastValue)}>
+                          {event.actualValue || "—"}
+                        </span>
+                      </Cell>
                       <Cell muted>—</Cell>
                       <Cell>{event.forecastValue || "—"}</Cell>
                       <Cell muted>—</Cell>
@@ -227,12 +260,12 @@ function Cell({ children, muted = false, strong = false }: { children: ReactNode
 
 function ImpactBadge({ impact }: { impact: EconomicEventView["impact"] }) {
   const style = impact === "HIGH"
-    ? "border-[#704144] bg-[#2a191b] text-[#df9b95]"
+    ? "border-[#7f1d1d] bg-[var(--negative-soft)] text-[#f87171]"
     : impact === "MEDIUM"
       ? "border-[#5b4a2e] bg-[#241e14] text-[#c3a46b]"
       : impact === "HOLIDAY"
         ? "border-[#3b4650] bg-[#171e24] text-[#91a2ae]"
-        : "border-[#354039] bg-[#151d19] text-[#84918a]";
+        : "border-[#353638] bg-[#171819] text-[#8d8d8f]";
   return <span className={`rounded-full border px-1.5 py-0.5 text-[7px] font-semibold ${style}`}>{formatLabel(impact)}</span>;
 }
 
@@ -240,7 +273,32 @@ function Detail({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[8px] uppercase tracking-[0.08em] text-[#56615c]">{label}</p><p className="mt-1 text-[10px] text-[#b8c0bb]">{value}</p></div>;
 }
 
-function getRangeBounds(range: RangeFilter) {
+function actualTone(actual: string | null, forecast: string | null) {
+  const actualNumber = parseComparableValue(actual);
+  const forecastNumber = parseComparableValue(forecast);
+  if (actualNumber === null || forecastNumber === null || actualNumber === forecastNumber) {
+    return "font-semibold text-[#d4d4d4]";
+  }
+  return actualNumber > forecastNumber
+    ? "font-semibold text-[var(--positive)]"
+    : "font-semibold text-[var(--negative)]";
+}
+
+function parseComparableValue(value: string | null) {
+  if (!value) return null;
+  const match = value.replaceAll(",", "").match(/[-+]?\d*\.?\d+/);
+  if (!match) return null;
+  const parsed = Number(match[0]);
+  if (!Number.isFinite(parsed)) return null;
+  const suffix = value.toUpperCase();
+  if (suffix.includes("T")) return parsed * 1_000_000_000_000;
+  if (suffix.includes("B")) return parsed * 1_000_000_000;
+  if (suffix.includes("M")) return parsed * 1_000_000;
+  if (suffix.includes("K")) return parsed * 1_000;
+  return parsed;
+}
+
+function getRangeBounds(range: RangeFilter, customStart: string, customEnd: string) {
   const today = dateKeyToUtc(zurichDateKey(new Date()));
   const day = today.getUTCDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
@@ -249,6 +307,13 @@ function getRangeBounds(range: RangeFilter) {
   if (range === "tomorrow") { const tomorrow = addDays(today, 1); return bounds(tomorrow, tomorrow); }
   if (range === "next-week") return bounds(addDays(thisMonday, 7), addDays(thisMonday, 13));
   if (range === "previous-week") return bounds(addDays(thisMonday, -7), addDays(thisMonday, -1));
+  if (range === "custom" && customStart && customEnd) {
+    return {
+      start: customStart <= customEnd ? customStart : customEnd,
+      end: customStart <= customEnd ? customEnd : customStart,
+    };
+  }
+  if (range === "custom") return bounds(today, today);
   return bounds(thisMonday, addDays(thisMonday, 6));
 }
 

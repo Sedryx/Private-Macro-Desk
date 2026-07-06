@@ -1,23 +1,82 @@
-import { PageHeader } from "@/components/ui/PageHeader";
-import { PlannedList } from "@/components/ui/PlannedList";
-import { SectionCard } from "@/components/ui/SectionCard";
+import {
+  InterestRatesDesk,
+  type CentralBankRatesView,
+} from "@/components/rates/InterestRatesDesk";
+import { prisma } from "@/lib/prisma";
 
-export default function CentralBanksPage() {
-  return (
-    <>
-      <PageHeader
-        eyebrow="Markets / Policy"
-        title="Central banks"
-        description="Keep policy stance, meetings and communication in one measured view."
-      />
-      <div className="grid gap-5 lg:grid-cols-2">
-        <SectionCard title="Policy map" description="The current stance of the institutions followed by the desk." meta="Phase 2">
-          <PlannedList items={["Policy rate and direction", "Latest decision", "Forward guidance"]} note="Coverage will begin with the central banks relevant to this desk." />
-        </SectionCard>
-        <SectionCard title="Meeting notes" description="A readable record of decisions and meaningful language shifts." meta="Phase 2">
-          <PlannedList items={["Upcoming meetings", "Statement changes", "Desk interpretation"]} note="Primary-source links will remain attached to each note." />
-        </SectionCard>
-      </div>
-    </>
+export const dynamic = "force-dynamic";
+
+const bankConfigs = [
+  {
+    id: "fed",
+    label: "Federal Reserve",
+    currency: "USD",
+    codes: [{ code: "FEDFUNDS", label: "Effective Federal Funds Rate" }],
+  },
+  {
+    id: "ecb",
+    label: "European Central Bank",
+    currency: "EUR",
+    codes: [
+      { code: "ECB_DEPOSIT_RATE", label: "Deposit Facility Rate" },
+      { code: "ECB_MAIN_REFINANCING_RATE", label: "Main Refinancing Rate" },
+      { code: "ECB_MARGINAL_LENDING_RATE", label: "Marginal Lending Rate" },
+    ],
+  },
+  {
+    id: "snb",
+    label: "Swiss National Bank",
+    currency: "CHF",
+    codes: [{ code: "SNB_POLICY_RATE", label: "SNB Policy Rate" }],
+  },
+] as const;
+
+async function getRates(): Promise<CentralBankRatesView[]> {
+  const codes = bankConfigs.flatMap((bank) => bank.codes.map((series) => series.code));
+  const indicators = await prisma.macroIndicator.findMany({
+    where: { code: { in: [...codes] } },
+    include: {
+      values: {
+        orderBy: { date: "asc" },
+        take: 1200,
+      },
+    },
+  });
+  const byCode = new Map(indicators.map((indicator) => [indicator.code, indicator]));
+
+  return bankConfigs.map((bank) => ({
+    id: bank.id,
+    label: bank.label,
+    currency: bank.currency,
+    series: bank.codes.map((config) => {
+      const indicator = byCode.get(config.code);
+      return {
+        code: config.code,
+        label: config.label,
+        source: indicator?.source ?? null,
+        points: (indicator?.values ?? []).map((point) => ({
+          date: point.date.toISOString(),
+          value: point.value.toNumber(),
+        })),
+      };
+    }),
+  }));
+}
+
+export default async function CentralBanksPage() {
+  let banks: CentralBankRatesView[] | null = null;
+
+  try {
+    banks = await getRates();
+  } catch (error) {
+    console.error("Unable to load interest rates", error);
+  }
+
+  return banks ? (
+    <InterestRatesDesk banks={banks} />
+  ) : (
+    <section className="desk-surface px-6 py-16 text-center text-[12px] text-[#777]">
+      Interest-rate data unavailable. Check PostgreSQL and refresh.
+    </section>
   );
 }

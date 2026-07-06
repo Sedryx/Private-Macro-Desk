@@ -97,6 +97,7 @@ export async function createTrade(
     });
 
     revalidatePath("/journal");
+    revalidatePath("/dashboard");
     return { status: "success", message: "Trade idea added to the journal." };
   } catch (error) {
     console.error("Unable to create trade", error);
@@ -137,6 +138,7 @@ export async function updateTradeStatus(
     });
 
     revalidatePath("/journal");
+    revalidatePath("/dashboard");
     return { status: "success", message: "Status updated." };
   } catch (error) {
     console.error("Unable to update trade status", error);

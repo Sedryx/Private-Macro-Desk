@@ -253,6 +253,7 @@ function toChartPoints(values: SeriesPoint[]): MacroTrendPoint[] {
         timeZone: "UTC",
       }).format(point.date),
       value: point.value,
+      date: point.date.toISOString(),
     }));
 }
 

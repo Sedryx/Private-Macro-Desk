@@ -15,23 +15,29 @@ export function MacroCommandCenter({
   const [activeId, setActiveId] = useState("united-states");
   const activeProfile = profiles.find((profile) => profile.id === activeId);
   return (
-    <div className="space-y-5">
-      <header>
-        <h1 className="text-[27px] font-semibold tracking-[-0.04em] text-[#f0f2ef] sm:text-[34px]">
-          Macro
-        </h1>
+    <div className="space-y-3">
+      <header className="desk-surface flex items-center justify-between gap-4 px-4 py-3">
+        <div>
+          <p className="terminal-label">Macro data</p>
+          <h1 className="mt-1 text-[18px] font-semibold tracking-[-0.025em] text-[#f2f2f2]">
+            Macro
+          </h1>
+        </div>
+        <CountrySelector
+          profiles={profiles}
+          activeId={activeId}
+          onSelect={setActiveId}
+        />
       </header>
-
-      <CountrySelector
-        profiles={profiles}
-        activeId={activeId}
-        onSelect={setActiveId}
-      />
 
       {activeId === "global" ? (
         <GlobalMacroOverview profiles={profiles} />
       ) : activeProfile ? (
-        <CountryMacroProfileView key={activeProfile.id} profile={activeProfile} />
+        <CountryMacroProfileView
+          key={activeProfile.id}
+          profile={activeProfile}
+          profiles={profiles}
+        />
       ) : null}
     </div>
   );

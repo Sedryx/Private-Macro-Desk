@@ -13,15 +13,15 @@ import type { JournalUser, TradeView } from "@/components/journal/TradeList";
 const initialState: JournalActionState = { status: "idle", message: "" };
 
 const directionTone = {
-  LONG: "border-[#3e4b3d] bg-[#1a231b] text-[#b1c1a7]",
-  SHORT: "border-[#513b3c] bg-[#24191a] text-[#d0a09c]",
+  LONG: "border-[#176b35] bg-[var(--positive-soft)] text-[#3fca6f]",
+  SHORT: "border-[#742b2b] bg-[var(--negative-soft)] text-[#ef6a6a]",
 };
 
 const statusTone = {
   PLANNED: "border-[#3b4449] bg-[#171d21] text-[#9ca6a1]",
-  OPEN: "border-[#40503e] bg-[#1a241b] text-[#b2c2a8]",
+  OPEN: "border-[#176b35] bg-[var(--positive-soft)] text-[#3fca6f]",
   CLOSED: "border-[#39454d] bg-[#172027] text-[#9babb4]",
-  CANCELLED: "border-[#4b3c3c] bg-[#211919] text-[#b89592]",
+  CANCELLED: "border-[#742b2b] bg-[var(--negative-soft)] text-[#ef6a6a]",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {

@@ -6,17 +6,19 @@ type StatCardProps = {
 };
 
 const toneClasses = {
-  neutral: "text-[#d8ddda]",
-  positive: "text-[#afbea5]",
-  negative: "text-[#c99b96]",
+  neutral: "text-[#f0f0f0]",
+  positive: "text-[var(--positive)]",
+  negative: "text-[var(--negative)]",
 };
 
 export function StatCard({ label, value, detail, tone = "neutral" }: StatCardProps) {
   return (
-    <article className="desk-surface p-5">
-      <p className="text-[11px] font-medium text-[#7f8985]">{label}</p>
-      <p className={`mt-3 text-xl font-semibold tracking-[-0.025em] ${toneClasses[tone]}`}>{value}</p>
-      <p className="mt-2 text-[12px] leading-5 text-[#68736e]">{detail}</p>
+    <article className="desk-surface p-4">
+      <p className="terminal-label">{label}</p>
+      <p className={"mt-2 text-[22px] font-semibold tracking-[-0.03em] tabular-nums " + toneClasses[tone]}>
+        {value}
+      </p>
+      <p className="mt-1.5 truncate text-[10px] text-[#686868]">{detail}</p>
     </article>
   );
 }

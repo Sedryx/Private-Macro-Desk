@@ -66,9 +66,9 @@ const usIndicators: FredSeriesConfig[] = [
   series("US", "US_RETAIL_SALES_MOM", "RSAFS", "US Retail Sales MoM", MacroCategory.GROWTH, "%", "MOM_PERCENT", ui("growth", "us-retail", "percent", "pp")),
   series("US", "US_INDUSTRIAL_PRODUCTION_YOY", "INDPRO", "US Industrial Production YoY", MacroCategory.GROWTH, "%", "YOY_PERCENT", ui("growth", "us-industrial-production", "percent", "pp")),
   series("US", "US_CONSUMER_SENTIMENT", "UMCSENT", "US Consumer Sentiment", MacroCategory.GROWTH, "index", "DIRECT", ui("growth", "us-sentiment", "index", "value")),
-  series("US", "US2Y", "DGS2", "US 2Y Treasury Yield", MacroCategory.RATES, "%", "DIRECT", ui("ratesMarkets", "us-2y", "percent", "bp")),
+  series("US", "US1Y", "DGS1", "US 1Y Treasury Yield", MacroCategory.RATES, "%", "DIRECT", ui("ratesMarkets", "us-1y", "percent", "bp")),
+  series("US", "US5Y", "DGS5", "US 5Y Treasury Yield", MacroCategory.RATES, "%", "DIRECT", ui("ratesMarkets", "us-5y", "percent", "bp")),
   series("US", "US10Y", "DGS10", "US 10Y Treasury Yield", MacroCategory.RATES, "%", "DIRECT", ui("ratesMarkets", "us-10y", "percent", "bp", "US 10Y")),
-  series("US", "US_2Y10Y_CURVE", "T10Y2Y", "US 10Y minus 2Y Treasury Curve", MacroCategory.RATES, "%", "DIRECT", ui("ratesMarkets", "us-curve", "percent", "bp")),
   series("US", "US_DOLLAR_BROAD_INDEX", "DTWEXBGS", "Nominal Broad US Dollar Index", MacroCategory.OTHER, "index", "DIRECT", ui("ratesMarkets", "us-dollar", "index", "value", "Broad USD", "marketProxy")),
 ];
 

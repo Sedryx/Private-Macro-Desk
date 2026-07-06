@@ -5,14 +5,14 @@ export function GlobalMacroOverview({ profiles }: { profiles: CountryMacroProfil
     <section>
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#7e8a84]">Cross-country monitor</p>
+          <p className="terminal-label">Cross-country monitor // Policy</p>
           <h2 className="mt-2 text-lg font-semibold tracking-[-0.025em] text-[#e7ebe8]">Global policy board</h2>
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {profiles.map((profile) => (
-          <article key={profile.id} className="desk-surface overflow-hidden p-4">
+          <article key={profile.id} className="desk-surface overflow-hidden p-3.5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <span className="text-[9px] font-semibold tracking-[0.12em] text-[#718078]">{profile.countryCode}</span>

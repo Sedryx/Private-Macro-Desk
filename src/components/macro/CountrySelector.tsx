@@ -15,27 +15,19 @@ export function CountrySelector({
   ];
 
   return (
-    <nav aria-label="Macro region" className="-mx-1 overflow-x-auto px-1 pb-1">
-      <div className="flex min-w-max gap-1 rounded-xl border border-[var(--line)] bg-[#0e1419] p-1">
-        {tabs.map((tab) => {
-          const active = activeId === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              aria-current={active ? "page" : undefined}
-              onClick={() => onSelect(tab.id)}
-              className={`rounded-lg px-3.5 py-2 text-[11px] font-medium transition-colors ${
-                active
-                  ? "bg-[#242d31] text-[#eef1ee] shadow-sm"
-                  : "text-[#77827d] hover:bg-[#171e23] hover:text-[#c3cac6]"
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-    </nav>
+    <label className="flex items-center gap-2">
+      <span className="sr-only">Macro region</span>
+      <select
+        value={activeId}
+        onChange={(event) => onSelect(event.target.value)}
+        className="desk-field min-w-[190px] px-3 py-2 text-[11px]"
+      >
+        {tabs.map((tab) => (
+          <option key={tab.id} value={tab.id}>
+            {tab.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

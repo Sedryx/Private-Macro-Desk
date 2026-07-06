@@ -11,9 +11,9 @@ export type WatchlistSnapshotItem = {
 };
 
 const biasTone = {
-  BULLISH: "text-[#afbea5]",
-  BEARISH: "text-[#ca9994]",
-  NEUTRAL: "text-[#a9b1ad]",
+  BULLISH: "text-[var(--positive)]",
+  BEARISH: "text-[var(--negative)]",
+  NEUTRAL: "text-[#d4d4d4]",
 };
 
 export function WatchlistSnapshot({
@@ -25,13 +25,13 @@ export function WatchlistSnapshot({
 }) {
   return (
     <section className="desk-surface overflow-hidden">
-      <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-5 py-5 sm:px-6">
+      <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-4 py-4 sm:px-5">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Shared market map</p>
+          <p className="terminal-label">Shared market map // Snapshot</p>
           <h2 className="mt-2 text-[15px] font-semibold text-[#e4e8e5]">Watchlist Snapshot</h2>
           <p className="mt-1 text-[12px] text-[#707b76]">{watchlistName ?? "No watchlist created yet"}</p>
         </div>
-        <Link href="/watchlist" className="text-[11px] font-medium text-[#9dad94] transition hover:text-[#d3ddd0]">
+        <Link href="/watchlist" className="text-[10px] font-medium text-[#a3a3a3] transition hover:text-white">
           Open list →
         </Link>
       </div>

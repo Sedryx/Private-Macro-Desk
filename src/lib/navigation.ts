@@ -12,7 +12,7 @@ export const navigationItems: NavigationItem[] = [
   { label: "Journal", href: "/journal", section: "Desk" },
   { label: "Macro", href: "/macro", section: "Markets" },
   { label: "Calendar", href: "/calendar", section: "Markets" },
-  { label: "Central Banks", href: "/central-banks", section: "Markets" },
+  { label: "Interest Rates", href: "/central-banks", section: "Markets" },
   { label: "Research", href: "/research", section: "Workspace" },
   { label: "Settings", href: "/settings", section: "Workspace" },
 ];

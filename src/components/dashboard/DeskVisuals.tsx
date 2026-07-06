@@ -33,10 +33,10 @@ export function DeskVisuals({
         description="Current bias across the shared Main Watchlist."
         items={watchlistBiases}
       />
-      <article className="desk-surface p-5 sm:p-6">
+      <article className="desk-surface p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Risk</p>
+            <p className="terminal-label">Risk // Open positions</p>
             <h3 className="mt-2 text-[14px] font-semibold text-[#dfe4e0]">Open Risk Snapshot</h3>
             <p className="mt-1 text-[11px] text-[#707b76]">Approximate sum of riskPercent on OPEN trades.</p>
           </div>
@@ -82,10 +82,10 @@ function DistributionCard({
   const total = items.reduce((sum, item) => sum + item.value, 0);
 
   return (
-    <article className="desk-surface p-5 sm:p-6">
+    <article className="desk-surface p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">{eyebrow}</p>
+          <p className="terminal-label">{eyebrow + " // Distribution"}</p>
           <h3 className="mt-2 text-[14px] font-semibold text-[#dfe4e0]">{title}</h3>
           <p className="mt-1 text-[11px] text-[#707b76]">{description}</p>
         </div>
@@ -96,7 +96,7 @@ function DistributionCard({
         {items.map((item) => (
           <div key={item.label} className="grid grid-cols-[72px_minmax(0,1fr)_24px] items-center gap-3">
             <span className="text-[9px] font-medium text-[#7f8984]">{item.label}</span>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[#242c30]">
+            <div className="h-1.5 overflow-hidden rounded-sm bg-[#292a2c]">
               <div
                 className={`h-full rounded-full ${item.color}`}
                 style={{ width: item.value === 0 ? "0%" : `${Math.max((item.value / maximum) * 100, 8)}%` }}

@@ -1,0 +1,79 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { activeSessionName, MarketSessions } from "@/components/layout/MarketSessions";
+
+const clocks = [
+  { label: "ZRH", zone: "Europe/Zurich" },
+  { label: "LON", zone: "Europe/London" },
+  { label: "NYC", zone: "America/New_York" },
+  { label: "TYO", zone: "Asia/Tokyo" },
+] as const;
+
+const feedItems = [
+  "MACRO DATA // FRED · EUROSTAT · ECB",
+  "CALENDAR // FOREX FACTORY WEEKLY",
+  "DESK // PRIVATE WORKSPACE",
+  "EXECUTION // DISABLED",
+];
+
+export function TerminalHeader() {
+  const [now, setNow] = useState<Date | null>(null);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+
+  useEffect(() => {
+    const update = () => setNow(new Date());
+    update();
+    const timer = window.setInterval(update, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <header className="sticky top-0 z-30 flex h-11 min-w-0 items-center border-b border-[#262729] bg-[rgba(9,10,11,0.94)] backdrop-blur-md">
+      <button
+        type="button"
+        onClick={() => setSessionsOpen(true)}
+        className="flex h-full shrink-0 items-center gap-3 border-r border-[#262729] px-4 hover:bg-white/[0.025] lg:px-5"
+      >
+        <span className="size-1.5 rounded-full bg-[var(--positive)] shadow-[0_0_8px_rgba(22,163,74,.55)]" />
+        <span className="terminal-label text-[#9a9a9a]">
+          Session // {now ? activeSessionName(now) : "--"}
+        </span>
+      </button>
+
+      <div className="hidden shrink-0 items-center gap-4 border-r border-[#262729] px-4 xl:flex">
+        {clocks.map((clock) => (
+          <div key={clock.label} className="flex items-baseline gap-1.5 text-[9px]">
+            <span className="text-[#5f5f5f]">{clock.label}</span>
+            <time className="font-mono text-[10px] font-medium tabular-nums text-[#c8c8c8]">
+              {now ? formatClock(now, clock.zone) : "--:--"}
+            </time>
+          </div>
+        ))}
+      </div>
+
+      <div className="min-w-0 flex-1 overflow-hidden" aria-label="Desk data status">
+        <div className="terminal-ticker-track">
+          {[...feedItems, ...feedItems].map((item, index) => (
+            <span key={item + index} className="px-6 text-[9px] uppercase tracking-[0.1em] text-[#676767]">
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+      {sessionsOpen && now ? (
+        <MarketSessions now={now} onClose={() => setSessionsOpen(false)} />
+      ) : null}
+    </header>
+  );
+}
+
+function formatClock(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone,
+  }).format(date);
+}

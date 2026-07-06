@@ -12,9 +12,9 @@ import type { WatchlistItemView } from "@/components/watchlist/types";
 const initialState: WatchlistActionState = { status: "idle", message: "" };
 
 const biasStyles = {
-  BULLISH: "border-[#405043] bg-[#172119] text-[#aabea3]",
-  BEARISH: "border-[#57413f] bg-[#241918] text-[#c99a95]",
-  NEUTRAL: "border-[#3c464b] bg-[#181e22] text-[#a8b0ac]",
+  BULLISH: "border-[#176b35] bg-[var(--positive-soft)] text-[#3fca6f]",
+  BEARISH: "border-[#742b2b] bg-[var(--negative-soft)] text-[#ef6a6a]",
+  NEUTRAL: "border-[#444548] bg-[#1a1b1c] text-[#c6c6c6]",
 };
 
 export function WatchlistCompactItem({ item }: { item: WatchlistItemView }) {

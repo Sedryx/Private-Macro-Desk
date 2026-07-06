@@ -5,7 +5,7 @@ export type MacroSectionKey =
   | "growth"
   | "ratesMarkets";
 
-export type MacroTrendPoint = { label: string; value: number };
+export type MacroTrendPoint = { label: string; value: number; date?: string };
 export type MacroSource =
   | "Demo"
   | "FRED"
@@ -189,9 +189,9 @@ function removeUnitedStatesDemoData(profile: CountryMacroProfile) {
       "Rates & Markets",
       "Treasury yields, curve and broad dollar index.",
       [
-        notConnectedMetric("us-2y", "US 2Y Treasury Yield"),
+        notConnectedMetric("us-1y", "US 1Y Treasury Yield"),
+        notConnectedMetric("us-5y", "US 5Y Treasury Yield"),
         notConnectedMetric("us-10y", "US 10Y Treasury Yield"),
-        notConnectedMetric("us-curve", "US 10Y minus 2Y Curve"),
         notConnectedMetric("us-dollar", "Nominal Broad US Dollar Index"),
       ],
     ),
@@ -338,10 +338,10 @@ profiles.push({
       metric("us-ism-services", "ISM Services", "52.1", 52.7, 52.1, "+0.2"),
       metric("us-confidence", "Consumer Confidence", "101.0", 107, 101, "-1.0"),
     ]),
-    ratesMarkets: section("US rates & markets", "Rates & Markets", "Front-end pricing, long-end yield, curve and dollar proxy.", [
-      metric("us-2y", "US 2Y", "4.25%", 4.8, 4.25, "+3 bp"),
+    ratesMarkets: section("US rates & markets", "Rates & Markets", "One, five and ten-year Treasury yields plus the dollar proxy.", [
+      metric("us-1y", "US 1Y", "4.20%", 4.8, 4.2, "+3 bp"),
+      metric("us-5y", "US 5Y", "4.25%", 4.6, 4.25, "+5 bp"),
       metric("us-10y", "US 10Y", "4.35%", 4.25, 4.35, "+8 bp"),
-      metric("us-curve", "2Y10Y Curve", "+10 bp", -55, 10, "+5 bp"),
       metric("us-dxy", "DXY", "104.2", 101.2, 104.2, "+0.4%"),
     ]),
   },

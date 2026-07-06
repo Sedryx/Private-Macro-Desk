@@ -206,6 +206,14 @@ model EconomicEvent {
 
 model ResearchDocument {
   id           String          @id @default(cuid())
+  externalId   String?
+  provider     String?
+  ticker       String?
+  companyName  String?
+  formType     String?
+  filedAt      DateTime?
+  reportDate   DateTime?
+  sourceUrl    String?
   title        String
   type         DocumentType
   source       String?
@@ -215,6 +223,11 @@ model ResearchDocument {
   updatedAt    DateTime        @updatedAt
   uploadedBy   User            @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
   chunks       ResearchChunk[]
+
+  @@index([provider])
+  @@index([ticker])
+  @@index([filedAt])
+  @@unique([provider, externalId])
 }
 
 model ResearchChunk {
