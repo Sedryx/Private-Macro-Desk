@@ -129,6 +129,7 @@ export function transformFredObservations(
 export async function syncFredSeries(
   config: FredSeriesConfig,
   apiKey = process.env.FRED_API_KEY,
+  sourceOverride?: "FRED fallback",
 ) {
   const raw = await fetchFredObservations(config.seriesId, apiKey);
   const parsed = parseFredObservations(raw);
@@ -145,8 +146,8 @@ export async function syncFredSeries(
   }
 
   const { prisma } = await import("@/lib/prisma");
-  const source =
-    config.transform === "DIRECT" ? "FRED" : "FRED / calculated";
+  const source = sourceOverride ??
+    (config.transform === "DIRECT" ? "FRED" : "FRED / calculated");
 
   return prisma.$transaction(async (transaction) => {
     const indicator = await transaction.macroIndicator.upsert({
@@ -157,6 +158,8 @@ export async function syncFredSeries(
         country: config.country,
         unit: config.unit,
         source,
+        releaseType: null,
+        providerUpdatedAt: null,
       },
       create: {
         code: config.code,
@@ -165,6 +168,8 @@ export async function syncFredSeries(
         country: config.country,
         unit: config.unit,
         source,
+        releaseType: null,
+        providerUpdatedAt: null,
       },
     });
 

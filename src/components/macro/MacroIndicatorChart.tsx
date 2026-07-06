@@ -20,7 +20,7 @@ export function MacroIndicatorChart({
   color?: string;
 }) {
   return (
-    <div className="h-[260px] w-full min-w-0 sm:h-[300px]" aria-label="Demo macro trend chart">
+    <div className="h-[260px] w-full min-w-0 sm:h-[300px]" aria-label="Macro trend chart">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={points} margin={{ top: 12, right: 12, bottom: 0, left: -10 }} accessibilityLayer>
           <CartesianGrid stroke="#273036" strokeDasharray="3 5" vertical={false} />

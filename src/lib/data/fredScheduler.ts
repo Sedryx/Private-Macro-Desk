@@ -1,7 +1,14 @@
+import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
+import { syncEuroAreaData } from "@/lib/data/euroAreaSync";
 import { FRED_SERIES, syncFredSeries } from "@/lib/data/fred";
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const INITIAL_CHECK_DELAY_MS = 30 * 1000;
+const US_FRED_SERIES = FRED_SERIES.filter((series) => series.country === "US");
+const EXPECTED_CODES = [
+  ...US_FRED_SERIES.map((series) => series.code),
+  ...OFFICIAL_EURO_AREA_SERIES.map((series) => series.code),
+];
 
 type SchedulerState = {
   timer?: ReturnType<typeof setInterval>;
@@ -9,26 +16,20 @@ type SchedulerState = {
   running?: Promise<unknown>;
 };
 
-const globalForFredScheduler = globalThis as typeof globalThis & {
-  fredSchedulerState?: SchedulerState;
+const globalForMacroScheduler = globalThis as typeof globalThis & {
+  macroSchedulerState?: SchedulerState;
 };
 
 export function startFredScheduler() {
-  const state =
-    globalForFredScheduler.fredSchedulerState ??
-    (globalForFredScheduler.fredSchedulerState = {});
-
+  const state = globalForMacroScheduler.macroSchedulerState ??
+    (globalForMacroScheduler.macroSchedulerState = {});
   if (state.timer) return;
 
   const checkAndSync = () => {
     if (state.running) return;
-
-    state.running = syncFredIfStale()
+    state.running = syncMacroIfStale()
       .catch((error: unknown) => {
-        console.error(
-          "[FRED scheduler] Sync failed:",
-          error instanceof Error ? error.message : error,
-        );
+        console.error("[Macro scheduler] Sync failed:", errorMessage(error));
       })
       .finally(() => {
         state.running = undefined;
@@ -39,63 +40,61 @@ export function startFredScheduler() {
   state.initialCheck.unref();
   state.timer = setInterval(checkAndSync, TWO_HOURS_MS);
   state.timer.unref();
-
-  console.log("[FRED scheduler] Automatic sync enabled every 2 hours.");
+  console.log("[Macro scheduler] Official Euro Area + US FRED sync enabled every 2 hours.");
 }
 
-export async function syncFredIfStale() {
-  if (!process.env.FRED_API_KEY) {
-    console.warn("[FRED scheduler] FRED_API_KEY is missing; automatic sync skipped.");
-    return { status: "missing-key" as const };
-  }
-
+export async function syncMacroIfStale(force = false) {
   const { prisma } = await import("@/lib/prisma");
   const existingIndicators = await prisma.macroIndicator.findMany({
-    where: {
-      code: { in: FRED_SERIES.map((series) => series.code) },
-      source: { in: ["FRED", "FRED / calculated"] },
-    },
+    where: { code: { in: EXPECTED_CODES } },
     select: { code: true, updatedAt: true },
   });
   const oldestUpdate = existingIndicators.reduce<Date | null>(
     (oldest, indicator) =>
-      oldest === null || indicator.updatedAt < oldest
-        ? indicator.updatedAt
-        : oldest,
+      oldest === null || indicator.updatedAt < oldest ? indicator.updatedAt : oldest,
     null,
   );
-  const complete = existingIndicators.length === FRED_SERIES.length;
-  const fresh =
-    complete &&
-    oldestUpdate !== null &&
+  const complete = existingIndicators.length === EXPECTED_CODES.length;
+  const fresh = complete && oldestUpdate !== null &&
     Date.now() - oldestUpdate.getTime() < TWO_HOURS_MS;
 
-  if (fresh) {
-    console.log("[FRED scheduler] Data is still fresh; sync skipped.");
-    return { status: "fresh" as const };
+  if (!force && fresh) {
+    console.log("[Macro scheduler] Data is still fresh; sync skipped.");
+    return { status: "fresh" as const, failures: [] as string[] };
   }
 
-  console.log("[FRED scheduler] Refreshing FRED data...");
+  console.log("[Macro scheduler] Refreshing official Euro Area and US data...");
   const failures: string[] = [];
 
-  for (const series of FRED_SERIES) {
-    try {
-      const result = await syncFredSeries(series);
-      console.log(
-        `[FRED scheduler] ${result.code}: ${result.valueCount} values updated.`,
-      );
-    } catch (error) {
-      failures.push(series.code);
-      console.error(
-        `[FRED scheduler] ${series.code} failed: ${error instanceof Error ? error.message : error}`,
-      );
+  if (process.env.FRED_API_KEY) {
+    for (const series of US_FRED_SERIES) {
+      try {
+        const result = await syncFredSeries(series);
+        console.log(`[Macro scheduler] ${result.code}: ${result.valueCount} FRED values.`);
+      } catch (error) {
+        failures.push(series.code);
+        console.error(`[Macro scheduler] ${series.code}: ${errorMessage(error)}`);
+      }
     }
+  } else {
+    console.warn("[Macro scheduler] FRED_API_KEY missing; US refresh skipped.");
   }
 
-  if (failures.length > 0) {
-    throw new Error(`Partial FRED failure: ${failures.join(", ")}`);
+  const euroArea = await syncEuroAreaData();
+  for (const result of euroArea.results) {
+    console.log(`[Macro scheduler] ${result.code}: ${result.valueCount} ${result.source} values.`);
+  }
+  for (const failure of euroArea.failures) {
+    failures.push(failure.code);
+    console.error(`[Macro scheduler] ${failure.code}: ${failure.message}`);
   }
 
-  console.log("[FRED scheduler] Automatic refresh complete.");
-  return { status: "synced" as const };
+  console.log("[Macro scheduler] Refresh complete.");
+  return { status: failures.length === 0 ? "synced" as const : "partial" as const, failures };
+}
+
+export const syncFredIfStale = syncMacroIfStale;
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unknown sync error";
 }

@@ -14,9 +14,11 @@ export function MacroCommandCenter({
 }) {
   const [activeId, setActiveId] = useState("united-states");
   const activeProfile = profiles.find((profile) => profile.id === activeId);
-  const hasFredData = profiles.some((profile) =>
+  const hasLiveData = profiles.some((profile) =>
     Object.values(profile.sections).some((section) =>
-      section.indicators.some((indicator) => indicator.source.startsWith("FRED")),
+      section.indicators.some((indicator) =>
+        ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB"].includes(indicator.source),
+      ),
     ),
   );
 
@@ -29,7 +31,7 @@ export function MacroCommandCenter({
               Macro command center
             </p>
             <span className="rounded-full border border-[#4a4132] bg-[#211d16] px-2 py-0.5 text-[8px] font-semibold text-[#bca273]">
-              {hasFredData
+              {hasLiveData
                 ? "USA + Euro Area live · Others coming soon"
                 : "Not connected"}
             </span>
@@ -43,8 +45,8 @@ export function MacroCommandCenter({
           </p>
         </div>
         <p className="max-w-sm text-[9px] leading-4 text-[#606b66] lg:text-right">
-          USA and Euro Area use server-side FRED data. Other regions remain clean
-          placeholders until official sources are connected.
+          USA uses server-side FRED data. Euro Area uses ECB and Eurostat first,
+          with FRED only as a labelled fallback.
         </p>
       </header>
 

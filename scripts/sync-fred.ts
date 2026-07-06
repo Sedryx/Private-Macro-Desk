@@ -13,10 +13,11 @@ async function main() {
     return;
   }
 
-  console.log(`Syncing ${FRED_SERIES.length} FRED series...`);
+  const seriesToSync = FRED_SERIES.filter((series) => series.country === "US");
+  console.log(`Syncing ${seriesToSync.length} US FRED series...`);
   const failures: string[] = [];
 
-  for (const series of FRED_SERIES) {
+  for (const series of seriesToSync) {
     try {
       const result = await syncFredSeries(series, apiKey);
       const latestDate = result.latestDate?.toISOString().slice(0, 10) ?? "unknown";

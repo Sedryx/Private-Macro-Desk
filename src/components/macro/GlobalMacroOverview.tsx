@@ -50,9 +50,11 @@ function SourceBadge({ profile }: { profile: CountryMacroProfile }) {
   const sources = Object.values(profile.sections).flatMap((section) =>
     section.indicators.map((indicator) => indicator.source),
   );
-  const hasFredData = sources.some((source) => source.startsWith("FRED"));
+  const hasLiveData = sources.some((source) =>
+    ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB"].includes(source),
+  );
   const label =
-    hasFredData
+    hasLiveData
       ? "Live data"
       : profile.countryCode === "US" || profile.countryCode === "EU"
         ? "Not connected"
@@ -61,7 +63,7 @@ function SourceBadge({ profile }: { profile: CountryMacroProfile }) {
   return (
     <span
       className={`rounded-full border px-1.5 py-0.5 text-[7px] font-semibold ${
-        hasFredData
+        hasLiveData
           ? "border-[#385044] bg-[#15231b] text-[#9fc0a5]"
           : "border-[#394147] bg-[#171d21] text-[#8d9993]"
       }`}

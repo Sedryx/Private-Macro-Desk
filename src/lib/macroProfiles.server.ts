@@ -7,6 +7,7 @@ import {
   type MacroChangeKind,
   type MacroDisplayKind,
 } from "@/lib/data/macroRegions";
+import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
 import {
   countryMacroProfiles,
   type CountryMacroProfile,
@@ -16,12 +17,29 @@ import {
 import { prisma } from "@/lib/prisma";
 
 type SeriesPoint = { date: Date; value: number };
+type SeriesDisplayConfig = Pick<
+  FredSeriesConfig,
+  "code" | "name" | "country" | "maxAgeDays" | "ui"
+> & { sourceRef: string };
 
-const configByCode = new Map(FRED_SERIES.map((series) => [series.code, series]));
+const displayConfigs: SeriesDisplayConfig[] = [
+  ...FRED_SERIES.map((series) => ({
+    ...series,
+    sourceRef: `FRED series ${series.seriesId}`,
+  })),
+  ...OFFICIAL_EURO_AREA_SERIES.map((series) => ({
+    ...series,
+    sourceRef: series.provider === "EUROSTAT"
+      ? `Eurostat dataset ${series.dataset}`
+      : `ECB series ${series.seriesKey}`,
+  })),
+];
+const configByCode = new Map(displayConfigs.map((series) => [series.code, series]));
 const regionByCode = new Map(
-  MACRO_REGION_CONFIGS.flatMap((region) =>
-    region.indicators.map((series) => [series.code, region] as const),
-  ),
+  displayConfigs.map((series) => [
+    series.code,
+    MACRO_REGION_CONFIGS.find((region) => region.countryCode === series.country),
+  ] as const),
 );
 
 export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
@@ -30,8 +48,7 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
   try {
     const indicators = await prisma.macroIndicator.findMany({
       where: {
-        code: { in: FRED_SERIES.map((series) => series.code) },
-        source: { in: ["FRED", "FRED / calculated"] },
+        code: { in: displayConfigs.map((series) => series.code) },
       },
       include: {
         values: {
@@ -57,11 +74,6 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
       const previous = values.at(-2);
       if (!latest) continue;
 
-      if (isStale(latest.date, seriesConfig.maxAgeDays)) {
-        markSeriesUnavailable(profile, seriesConfig, latest.date);
-        continue;
-      }
-
       loadedSeries.set(indicator.code, values);
       hydrateMetric(
         profile,
@@ -69,7 +81,10 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
         values,
         latest,
         previous,
-        normalizeSource(indicator.source),
+        normalizeSource(indicator.source, indicator.releaseType),
+        indicator.releaseType,
+        indicator.providerUpdatedAt,
+        isStale(latest.date, seriesConfig.maxAgeDays),
       );
     }
 
@@ -84,13 +99,16 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
 
 function hydrateMetric(
   profile: CountryMacroProfile,
-  config: FredSeriesConfig,
+  config: SeriesDisplayConfig,
   values: SeriesPoint[],
   latest: SeriesPoint,
   previous: SeriesPoint | undefined,
   source: MacroSource,
+  releaseType: string | null,
+  providerUpdatedAt: Date | null,
+  stale: boolean,
 ) {
-  const displayValue = formatValue(latest.value, config.ui.display);
+  const displayValue = formatValue(latest.value, config.ui.display, config.ui.decimals);
   const displayChange = formatChange(
     latest.value - (previous?.value ?? latest.value),
     config.ui.change,
@@ -107,7 +125,10 @@ function hydrateMetric(
     metric.history = toChartPoints(values);
     metric.source = source;
     metric.latestDate = latestDate;
-    metric.context = `${config.name} · FRED series ${config.seriesId}`;
+    metric.sourceUpdatedDate = providerUpdatedAt ? formatDate(providerUpdatedAt) : undefined;
+    metric.releaseType = releaseType ?? undefined;
+    metric.stale = stale;
+    metric.context = `${config.name} · ${config.sourceRef}`;
   }
 
   if (config.ui.snapshotLabel) {
@@ -119,47 +140,14 @@ function hydrateMetric(
       snapshot.change = displayChange;
       snapshot.source = source;
       snapshot.latestDate = latestDate;
+      snapshot.sourceUpdatedDate = providerUpdatedAt ? formatDate(providerUpdatedAt) : undefined;
+      snapshot.releaseType = releaseType ?? undefined;
+      snapshot.stale = stale;
     }
   }
 
   if (config.ui.profileField) {
     profile[config.ui.profileField] = displayValue;
-  }
-}
-
-function markSeriesUnavailable(
-  profile: CountryMacroProfile,
-  config: FredSeriesConfig,
-  latestDate: Date,
-) {
-  const metric = profile.sections[config.ui.section].indicators.find(
-    (item) => item.id === config.ui.metricId,
-  );
-  const context = `Latest FRED observation is stale (${formatDate(latestDate)})`;
-
-  if (metric) {
-    metric.value = "Data unavailable";
-    metric.change = undefined;
-    metric.history = [];
-    metric.source = "Data unavailable";
-    metric.latestDate = formatDate(latestDate);
-    metric.context = context;
-  }
-
-  if (config.ui.snapshotLabel) {
-    const snapshot = profile.snapshot.find(
-      (item) => item.label === config.ui.snapshotLabel,
-    );
-    if (snapshot) {
-      snapshot.value = "Data unavailable";
-      snapshot.change = undefined;
-      snapshot.source = "Data unavailable";
-      snapshot.latestDate = formatDate(latestDate);
-    }
-  }
-
-  if (config.ui.profileField) {
-    profile[config.ui.profileField] = "Data unavailable";
   }
 }
 
@@ -206,12 +194,14 @@ function markConnectedRegions(profiles: CountryMacroProfile[]) {
     if (!profile || region.profileId === "united-states") continue;
 
     const hasLiveMetric = Object.values(profile.sections).some((section) =>
-      section.indicators.some((metric) => metric.source.startsWith("FRED")),
+      section.indicators.some((metric) => isLiveSource(metric.source)),
     );
     if (hasLiveMetric) {
       profile.stance = "Live data";
       profile.stanceTone = "neutral";
-      profile.summary = `${region.regionName} macro data is synchronized server-side from ${region.sourceLabels.join(", ")} series available through FRED.`;
+      profile.summary = region.profileId === "eurozone"
+        ? "Euro Area policy rates come directly from the ECB Data Portal; inflation, labour and growth come from Eurostat. FRED is used only when an official request fails."
+        : `${region.regionName} macro data is synchronized server-side from ${region.sourceLabels.join(", ")}.`;
     }
   }
 }
@@ -266,8 +256,8 @@ function toChartPoints(values: SeriesPoint[]): MacroTrendPoint[] {
     }));
 }
 
-function formatValue(value: number, display: MacroDisplayKind) {
-  if (display === "percent") return `${formatNumber(value, 2)}%`;
+function formatValue(value: number, display: MacroDisplayKind, decimals = 2) {
+  if (display === "percent") return `${formatNumber(value, decimals)}%`;
   if (display === "billions") return `$${formatNumber(value, 0)}bn`;
   if (display === "jobs") return `${value > 0 ? "+" : ""}${formatNumber(value, 0)}k`;
   if (display === "claims") return formatNumber(value, 0);
@@ -312,8 +302,19 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-function normalizeSource(source: string | null): MacroSource {
+function normalizeSource(source: string | null, releaseType: string | null): MacroSource {
+  if (source === "ECB") return "ECB";
+  if (source === "Eurostat") {
+    return releaseType === "flash" ? "Eurostat flash" : "Eurostat";
+  }
+  if (source === "FRED fallback") return "FRED fallback";
   return source === "FRED / calculated" ? "FRED / calculated" : "FRED";
+}
+
+function isLiveSource(source: MacroSource) {
+  return source === "ECB" || source === "Eurostat" ||
+    source === "Eurostat flash" || source === "FRED fallback" ||
+    source === "FRED" || source === "FRED / calculated";
 }
 
 function isStale(date: Date, maxAgeDays?: number) {

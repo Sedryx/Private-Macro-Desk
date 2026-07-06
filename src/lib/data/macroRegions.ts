@@ -24,6 +24,7 @@ export type MacroUiBinding = {
   change: MacroChangeKind;
   snapshotLabel?: string;
   profileField?: "policyRate" | "inflation" | "unemployment" | "marketProxy";
+  decimals?: number;
 };
 
 export type FredSeriesConfig = {

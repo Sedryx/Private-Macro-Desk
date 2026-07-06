@@ -21,11 +21,48 @@ const prisma = new PrismaClient({
 const assets = [
   { symbol: "SPX", name: "S&P 500", type: AssetType.INDEX, currency: "USD", country: "US" },
   { symbol: "NDX", name: "Nasdaq 100", type: AssetType.INDEX, currency: "USD", country: "US" },
-  { symbol: "EURUSD", name: "EUR/USD", type: AssetType.FOREX },
+  { symbol: "DJI", name: "Dow Jones", type: AssetType.INDEX, currency: "USD", country: "US" },
+  { symbol: "RUSSELL2000", name: "Russell 2000", type: AssetType.INDEX, currency: "USD", country: "US" },
+  { symbol: "DAX", name: "DAX 40", type: AssetType.INDEX, currency: "EUR", country: "DE" },
+  { symbol: "CAC40", name: "CAC 40", type: AssetType.INDEX, currency: "EUR", country: "FR" },
+  { symbol: "FTSE100", name: "FTSE 100", type: AssetType.INDEX, currency: "GBP", country: "UK" },
+  { symbol: "NIKKEI225", name: "Nikkei 225", type: AssetType.INDEX, currency: "JPY", country: "JP" },
+  { symbol: "EURUSD", name: "EUR/USD", type: AssetType.FOREX, currency: "USD" },
+  { symbol: "GBPUSD", name: "GBP/USD", type: AssetType.FOREX, currency: "USD" },
+  { symbol: "USDJPY", name: "USD/JPY", type: AssetType.FOREX, currency: "JPY" },
+  { symbol: "USDCHF", name: "USD/CHF", type: AssetType.FOREX, currency: "CHF" },
+  { symbol: "EURCHF", name: "EUR/CHF", type: AssetType.FOREX, currency: "CHF" },
+  { symbol: "AUDUSD", name: "AUD/USD", type: AssetType.FOREX, currency: "USD" },
+  { symbol: "USDCAD", name: "USD/CAD", type: AssetType.FOREX, currency: "CAD" },
   { symbol: "XAUUSD", name: "Gold", type: AssetType.COMMODITY, currency: "USD" },
+  { symbol: "XAGUSD", name: "Silver", type: AssetType.COMMODITY, currency: "USD" },
+  { symbol: "WTI", name: "WTI Crude Oil", type: AssetType.COMMODITY, currency: "USD" },
+  { symbol: "BRENT", name: "Brent Crude Oil", type: AssetType.COMMODITY, currency: "USD" },
+  { symbol: "NATGAS", name: "Natural Gas", type: AssetType.COMMODITY, currency: "USD" },
   { symbol: "BTCUSD", name: "Bitcoin", type: AssetType.CRYPTO, currency: "USD" },
+  { symbol: "ETHUSD", name: "Ethereum", type: AssetType.CRYPTO, currency: "USD" },
+  { symbol: "SOLUSD", name: "Solana", type: AssetType.CRYPTO, currency: "USD" },
+  { symbol: "US2Y", name: "US 2Y Yield", type: AssetType.RATE, currency: "USD", country: "US" },
   { symbol: "US10Y", name: "US 10Y Yield", type: AssetType.RATE, currency: "USD", country: "US" },
+  { symbol: "DE10Y", name: "German 10Y Bund", type: AssetType.RATE, currency: "EUR", country: "DE" },
+  { symbol: "CH10Y", name: "Swiss 10Y Yield", type: AssetType.RATE, currency: "CHF", country: "CH" },
+  { symbol: "AAPL", name: "Apple", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
+  { symbol: "MSFT", name: "Microsoft", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
+  { symbol: "NVDA", name: "Nvidia", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
+  { symbol: "TSLA", name: "Tesla", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
+  { symbol: "META", name: "Meta Platforms", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
+  { symbol: "AMZN", name: "Amazon", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
+  { symbol: "GOOGL", name: "Alphabet", type: AssetType.STOCK, currency: "USD", country: "US", exchange: "NASDAQ" },
 ] as const;
+
+const starterAssetKeys = new Set([
+  "SPX:INDEX",
+  "NDX:INDEX",
+  "EURUSD:FOREX",
+  "XAUUSD:COMMODITY",
+  "BTCUSD:CRYPTO",
+  "US10Y:RATE",
+]);
 
 const indicators = [
   { code: "SNB_POLICY_RATE", name: "SNB Policy Rate", country: "CH", category: MacroCategory.CENTRAL_BANK, unit: "%", source: "Demo seed - not live" },
@@ -76,7 +113,9 @@ async function main() {
       data: { name: "Main Watchlist", userId: joachim.id },
     }));
 
-  for (const asset of seededAssets) {
+  for (const asset of seededAssets.filter((item) =>
+    starterAssetKeys.has(`${item.symbol}:${item.type}`),
+  )) {
     await prisma.watchlistItem.upsert({
       where: {
         watchlistId_assetId: {

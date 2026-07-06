@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "data:fred": "tsx scripts/sync-fred.ts"
+    "data:fred": "tsx scripts/sync-fred.ts",
+    "data:macro": "tsx scripts/sync-macro.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

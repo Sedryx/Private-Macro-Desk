@@ -75,6 +75,7 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
             <div className="flex items-start justify-between gap-2">
               <p className="text-[9px] text-[#68736e]">{item.label}</p>
               <SourceBadge source={item.source ?? "Demo"} />
+              {item.stale ? <StaleBadge /> : null}
             </div>
             <p className="mt-2 text-[16px] font-semibold tracking-[-0.025em] text-[#dde2de]">
               {item.value}
@@ -141,8 +142,14 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
                   </p>
                   <p className="mt-1 text-[8px] text-[#65706b]">
                     {activeMetric.source}
-                    {activeMetric.latestDate ? ` · ${activeMetric.latestDate}` : ""}
+                    {activeMetric.latestDate ? ` · observation ${activeMetric.latestDate}` : ""}
                   </p>
+                  {activeMetric.sourceUpdatedDate ? (
+                    <p className="mt-1 text-[8px] text-[#59645f]">
+                      Source updated · {activeMetric.sourceUpdatedDate}
+                    </p>
+                  ) : null}
+                  {activeMetric.stale ? <StaleBadge /> : null}
                 </div>
               ) : null}
             </div>
@@ -153,11 +160,11 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
             ) : (
               <p className="py-16 text-center text-[11px] text-[#68736e]">
                 {activeMetric?.source === "Not connected"
-                  ? "Not connected yet — run the FRED sync."
+                  ? "Not connected yet — run the macro sync."
                   : activeMetric?.source === "Coming soon"
                     ? "Coming soon — official data source not connected."
                     : activeMetric?.source === "Data unavailable"
-                      ? "Data unavailable from the configured FRED series."
+                      ? "Data unavailable from the configured official source and fallback."
                     : "No values yet"}
               </p>
             )}
@@ -196,6 +203,7 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
                               : "No recent change")}
                       </span>
                       <SourceBadge source={indicator.source} />
+                      {indicator.stale ? <StaleBadge /> : null}
                     </div>
                   </div>
                   {indicator.context ? (
@@ -206,6 +214,11 @@ export function CountryMacroProfileView({ profile }: { profile: CountryMacroProf
                   {indicator.latestDate ? (
                     <p className="mt-2 text-[8px] text-[#65706b]">
                       Latest observation · {indicator.latestDate}
+                    </p>
+                  ) : null}
+                  {indicator.sourceUpdatedDate ? (
+                    <p className="mt-1 text-[8px] text-[#59645f]">
+                      Source updated · {indicator.sourceUpdatedDate}
                     </p>
                   ) : null}
                 </button>
@@ -226,10 +239,13 @@ function SourceBadge({
   large?: boolean;
 }) {
   const styles =
-    source === "Live data" || source === "FRED"
+    source === "Live data" || source === "FRED" || source === "ECB" ||
+      source === "Eurostat" || source === "Eurostat flash"
       ? "border-[#385044] bg-[#15231b] text-[#9fc0a5]"
       : source === "FRED / calculated"
         ? "border-[#3d4e57] bg-[#152027] text-[#9eb9c5]"
+        : source === "FRED fallback"
+          ? "border-[#5a4930] bg-[#251f16] text-[#c5a66f]"
         : source === "Not connected" ||
             source === "Data unavailable" ||
             source === "Coming soon" ||
@@ -252,10 +268,20 @@ function getProfileSourceLabel(
   countryCode: string,
   sources: MacroSource[],
 ): MacroSource | "FRED / partial" {
-  const hasFred = sources.some((source) => source.startsWith("FRED"));
-  if (hasFred) return "Live data";
+  const hasLiveData = sources.some((source) =>
+    ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB"].includes(source),
+  );
+  if (hasLiveData) return "Live data";
   if (countryCode === "US" || countryCode === "EU") return "Not connected";
   return "Coming soon";
+}
+
+function StaleBadge() {
+  return (
+    <span className="mt-1 inline-block rounded-full border border-[#5a4930] bg-[#251f16] px-1.5 py-0.5 text-[7px] font-semibold text-[#c5a66f]">
+      Stale
+    </span>
+  );
 }
 
 function HeaderMetric({ label, value }: { label: string; value: string }) {

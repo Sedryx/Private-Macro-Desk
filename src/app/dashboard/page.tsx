@@ -12,14 +12,12 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 const OWNER_EMAIL = "joachim@private-macro-desk.local";
-const MAIN_WATCHLIST_NAME = "Main Watchlist";
 
 async function getDashboardData() {
   try {
-    const [watchlist, tradeStatusRows, recentTrades, recentNotes, openTrades] = await Promise.all([
-      prisma.watchlist.findFirst({
+    const [watchlists, tradeStatusRows, recentTrades, recentNotes, openTrades] = await Promise.all([
+      prisma.watchlist.findMany({
         where: {
-          name: MAIN_WATCHLIST_NAME,
           user: { email: OWNER_EMAIL },
         },
         select: {
@@ -32,7 +30,7 @@ async function getDashboardData() {
               importantLevel: true,
               notes: true,
               updatedAt: true,
-              asset: { select: { symbol: true, type: true } },
+              asset: { select: { id: true, symbol: true, type: true } },
             },
           },
         },
@@ -83,7 +81,17 @@ async function getDashboardData() {
       tradeCounts[row.status] = row._count._all;
     });
 
-    const watchlistItems: WatchlistSnapshotItem[] = (watchlist?.items ?? [])
+    const seenAssetIds = new Set<string>();
+    const uniqueWatchlistItems = watchlists
+      .flatMap((watchlist) => watchlist.items)
+      .sort((left, right) => right.updatedAt.getTime() - left.updatedAt.getTime())
+      .filter((item) => {
+        if (seenAssetIds.has(item.asset.id)) return false;
+        seenAssetIds.add(item.asset.id);
+        return true;
+      });
+
+    const watchlistItems: WatchlistSnapshotItem[] = uniqueWatchlistItems
       .slice(0, 6)
       .map((item) => ({
         id: item.id,
@@ -96,7 +104,7 @@ async function getDashboardData() {
 
     const biasCounts = { BULLISH: 0, BEARISH: 0, NEUTRAL: 0, NOT_SET: 0 };
 
-    (watchlist?.items ?? []).forEach((item) => {
+    uniqueWatchlistItems.forEach((item) => {
       if (item.bias) {
         biasCounts[item.bias] += 1;
       } else {
@@ -143,13 +151,18 @@ async function getDashboardData() {
 
     return {
       databaseError: false,
-      watchlistName: watchlist?.name ?? null,
+      watchlistName:
+        watchlists.length === 0
+          ? null
+          : watchlists.length === 1
+            ? watchlists[0].name
+            : `${watchlists.length} watchlists`,
       watchlistItems,
-      watchlistTotal: watchlist?.items.length ?? 0,
-      latestAsset: watchlist?.items[0]
+      watchlistTotal: uniqueWatchlistItems.length,
+      latestAsset: uniqueWatchlistItems[0]
         ? {
-            symbol: watchlist.items[0].asset.symbol,
-            updatedAt: watchlist.items[0].updatedAt.toISOString(),
+            symbol: uniqueWatchlistItems[0].asset.symbol,
+            updatedAt: uniqueWatchlistItems[0].updatedAt.toISOString(),
           }
         : null,
       tradeCounts,

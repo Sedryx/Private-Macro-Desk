@@ -29,7 +29,7 @@ export function WatchlistSnapshot({
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Shared market map</p>
           <h2 className="mt-2 text-[15px] font-semibold text-[#e4e8e5]">Watchlist Snapshot</h2>
-          <p className="mt-1 text-[12px] text-[#707b76]">{watchlistName ?? "No main watchlist found"}</p>
+          <p className="mt-1 text-[12px] text-[#707b76]">{watchlistName ?? "No watchlist created yet"}</p>
         </div>
         <Link href="/watchlist" className="text-[11px] font-medium text-[#9dad94] transition hover:text-[#d3ddd0]">
           Open list →
@@ -37,9 +37,9 @@ export function WatchlistSnapshot({
       </div>
 
       {!watchlistName ? (
-        <EmptyMessage text="Run the seed or create the Main Watchlist to populate this snapshot." />
+        <EmptyMessage text="Create a watchlist and add an asset to populate this snapshot." />
       ) : items.length === 0 ? (
-        <EmptyMessage text="The main watchlist exists, but it has no assets yet." />
+        <EmptyMessage text="Your watchlist exists, but it has no assets yet." />
       ) : (
         <div className="divide-y divide-[var(--line)]">
           {items.map((item) => (

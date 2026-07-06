@@ -10,6 +10,10 @@ export type MacroSource =
   | "Demo"
   | "FRED"
   | "FRED / calculated"
+  | "FRED fallback"
+  | "Eurostat"
+  | "Eurostat flash"
+  | "ECB"
   | "Not connected"
   | "Data unavailable"
   | "Coming soon"
@@ -23,6 +27,9 @@ export type MacroMetric = {
   context?: string;
   source: MacroSource;
   latestDate?: string;
+  sourceUpdatedDate?: string;
+  releaseType?: string;
+  stale?: boolean;
   history: MacroTrendPoint[];
 };
 
@@ -50,7 +57,7 @@ export type CountryMacroProfile = {
   marketProxy: string;
   snapshot: Array<
     Pick<MacroMetric, "label" | "value" | "change"> &
-      Partial<Pick<MacroMetric, "source" | "latestDate">>
+      Partial<Pick<MacroMetric, "source" | "latestDate" | "sourceUpdatedDate" | "releaseType" | "stale">>
   >;
   sections: Record<MacroSectionKey, MacroSection>;
 };
@@ -224,7 +231,7 @@ function prepareEuroAreaProfile(profile: CountryMacroProfile) {
   profile.centralBank = "European Central Bank";
   profile.currency = "EUR";
   profile.summary =
-    "Euro Area metrics use server-side FRED observations sourced from the ECB and Eurostat where current series are available.";
+    "Euro Area inflation, labour and growth use Eurostat first; policy rates use the ECB Data Portal. FRED is retained only as a labelled fallback.";
   profile.snapshot = [
     { label: "ECB deposit", value: "Not connected yet", source: "Not connected" },
     { label: "Main refinancing", value: "Not connected yet", source: "Not connected" },
@@ -237,16 +244,17 @@ function prepareEuroAreaProfile(profile: CountryMacroProfile) {
     centralBank: section(
       "European Central Bank",
       "Central Bank",
-      "ECB deposit facility and main refinancing operation rates.",
+      "Official ECB deposit, refinancing and marginal lending facility rates.",
       [
         notConnectedMetric("eu-deposit", "ECB Deposit Facility Rate"),
         notConnectedMetric("eu-mro", "ECB Main Refinancing Operations Rate"),
+        notConnectedMetric("eu-marginal", "ECB Marginal Lending Facility Rate"),
       ],
     ),
     inflation: section(
       "Euro Area inflation",
       "Inflation",
-      "Headline and core HICP calculated from Eurostat price indexes.",
+      "Official Eurostat headline and core HICP annual rates.",
       [
         notConnectedMetric("eu-hicp", "Euro Area HICP YoY"),
         notConnectedMetric("eu-core-hicp", "Euro Area Core HICP YoY"),
@@ -255,14 +263,20 @@ function prepareEuroAreaProfile(profile: CountryMacroProfile) {
     labour: section(
       "Euro Area labour market",
       "Labour",
-      "Harmonised unemployment from the latest FRED series available.",
-      [notConnectedMetric("eu-unemployment", "Euro Area Unemployment Rate")],
+      "Official Eurostat harmonised unemployment rates.",
+      [
+        notConnectedMetric("eu-unemployment", "Euro Area Unemployment Rate"),
+        notConnectedMetric("eu-youth-unemployment", "Euro Area Youth Unemployment Rate"),
+      ],
     ),
     growth: section(
       "Euro Area growth",
       "Growth / Activity",
-      "Quarterly real GDP growth calculated from the real GDP level.",
-      [notConnectedMetric("eu-gdp", "Euro Area Real GDP Growth QoQ")],
+      "Official Eurostat quarter-on-quarter and year-on-year real GDP growth.",
+      [
+        notConnectedMetric("eu-gdp", "Euro Area Real GDP Growth QoQ"),
+        notConnectedMetric("eu-gdp-yoy", "Euro Area Real GDP Growth YoY"),
+      ],
     ),
     ratesMarkets: section(
       "Euro Area rates & markets",
