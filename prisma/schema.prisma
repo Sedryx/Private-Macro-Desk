@@ -214,6 +214,11 @@ model ResearchDocument {
   filedAt      DateTime?
   reportDate   DateTime?
   sourceUrl    String?
+  secItems     String[]        @default([])
+  exhibits     Json?
+  importance   String?
+  category     String?
+  summary      String?
   title        String
   type         DocumentType
   source       String?
@@ -239,4 +244,18 @@ model ResearchChunk {
   document   ResearchDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
+}
+
+model WorkspaceSettings {
+  id            String   @id @default(cuid())
+  workspaceName String   @default("Private Macro Desk")
+  language      String   @default("en")
+  timezone      String   @default("Europe/Zurich")
+  baseCurrency  String   @default("USD")
+  theme         String   @default("dark")
+  accentColor   String   @default("green")
+  fontSize      String   @default("normal")
+  density       String   @default("compact")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

@@ -93,6 +93,25 @@ async function main() {
     },
   });
 
+  const existingSettings = await prisma.workspaceSettings.findFirst({
+    select: { id: true },
+  });
+
+  if (!existingSettings) {
+    await prisma.workspaceSettings.create({
+      data: {
+        workspaceName: "Private Macro Desk",
+        language: "en",
+        timezone: "Europe/Zurich",
+        baseCurrency: "USD",
+        theme: "dark",
+        accentColor: "green",
+        fontSize: "normal",
+        density: "compact",
+      },
+    });
+  }
+
   const seededAssets = [];
 
   for (const asset of assets) {

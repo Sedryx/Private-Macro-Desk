@@ -37,9 +37,21 @@ body {
     linear-gradient(180deg, #0b0c0d 0%, var(--canvas) 38%);
   color: var(--text);
   font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: calc(16px * var(--workspace-font-scale, 1));
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
+
+.theme-darker {
+  --canvas: #050606;
+  --sidebar: #070808;
+  --surface: #101112;
+  --surface-raised: #151617;
+  --surface-subtle: #0b0c0d;
+}
+
+.density-comfortable main { padding-top: calc(1.75rem * var(--workspace-density-scale, 1)); }
+.density-spacious main { padding-top: calc(1.75rem * var(--workspace-density-scale, 1)); }
 
 button, input, select, textarea { font: inherit; }
 button, a, select { -webkit-tap-highlight-color: transparent; }
@@ -95,14 +107,14 @@ table, .tabular-nums { font-variant-numeric: tabular-nums; }
   .desk-field::placeholder { color: #595959; }
   .desk-field:hover { border-color: #48494c; }
   .desk-field:focus {
-    border-color: #727376;
+    border-color: var(--accent);
     background: #131415;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.045);
     outline: none;
   }
 
   .desk-button {
-    border: 1px solid #414245;
+    border: 1px solid color-mix(in srgb, var(--accent) 38%, #414245);
     border-radius: 6px;
     background: #1b1c1e;
     color: #f0f0f0;
@@ -110,7 +122,7 @@ table, .tabular-nums { font-variant-numeric: tabular-nums; }
   }
 
   .desk-button:hover:not(:disabled) {
-    border-color: #5a5b5e;
+    border-color: color-mix(in srgb, var(--accent) 54%, #5a5b5e);
     background: #232426;
   }
 
