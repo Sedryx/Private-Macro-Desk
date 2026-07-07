@@ -37,7 +37,7 @@ body {
     linear-gradient(180deg, #0b0c0d 0%, var(--canvas) 38%);
   color: var(--text);
   font-family: Inter, "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: calc(16px * var(--workspace-font-scale, 1));
+  font-size: 16px;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -52,6 +52,12 @@ body {
 
 .density-comfortable main { padding-top: calc(1.75rem * var(--workspace-density-scale, 1)); }
 .density-spacious main { padding-top: calc(1.75rem * var(--workspace-density-scale, 1)); }
+.font-small { font-size: 15px; }
+.font-normal { font-size: 16px; }
+.font-large { font-size: 17px; }
+.density-compact main { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.density-comfortable main { padding-top: 2rem; padding-bottom: 2rem; }
+.density-spacious main { padding-top: 2.35rem; padding-bottom: 2.35rem; }
 
 button, input, select, textarea { font: inherit; }
 button, a, select { -webkit-tap-highlight-color: transparent; }

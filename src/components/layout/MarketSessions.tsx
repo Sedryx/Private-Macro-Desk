@@ -13,11 +13,14 @@ const sessions = [
 
 export function MarketSessions({
   now,
+  language = "en",
   onClose,
 }: {
   now: Date;
+  language?: string;
   onClose: () => void;
 }) {
+  const isFr = language === "fr";
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -43,7 +46,7 @@ export function MarketSessions({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Market sessions"
+      aria-label={isFr ? "Sessions de marche" : "Market sessions"}
       className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/75 px-4 pb-6 pt-20 backdrop-blur-sm"
       onMouseDown={onClose}
     >
@@ -53,15 +56,15 @@ export function MarketSessions({
       >
         <header className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
           <div>
-            <p className="terminal-label">Session map // Zurich time</p>
-            <h2 className="mt-1.5 text-[17px] font-semibold text-white">Market sessions</h2>
+            <p className="terminal-label">{isFr ? "Carte des sessions // Heure Zurich" : "Session map // Zurich time"}</p>
+            <h2 className="mt-1.5 text-[17px] font-semibold text-white">{isFr ? "Sessions de marche" : "Market sessions"}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-md border border-[#343538] px-2.5 py-1.5 text-[10px] text-[#8d8d8f] hover:bg-[#202123] hover:text-white"
           >
-            Close
+            {isFr ? "Fermer" : "Close"}
           </button>
         </header>
 
@@ -120,7 +123,9 @@ export function MarketSessions({
             </div>
           </div>
           <p className="mt-3 text-[9px] text-[#626264]">
-            Indicative cash-session hours. Daylight-saving changes are handled from each market timezone.
+            {isFr
+              ? "Horaires indicatifs des sessions cash. Les changements d'heure sont geres par chaque fuseau."
+              : "Indicative cash-session hours. Daylight-saving changes are handled from each market timezone."}
           </p>
         </div>
       </section>
@@ -129,7 +134,7 @@ export function MarketSessions({
   );
 }
 
-export function activeSessionName(now: Date) {
+export function activeSessionName(now: Date, language = "en") {
   const active = sessions.filter((session) => {
     const localHour = Number(
       new Intl.DateTimeFormat("en-GB", {
@@ -140,7 +145,7 @@ export function activeSessionName(now: Date) {
     );
     return localHour >= session.open && localHour < session.close;
   });
-  return active.at(-1)?.name ?? "Closed";
+  return active.at(-1)?.name ?? (language === "fr" ? "Ferme" : "Closed");
 }
 
 function bestSessionInterval(

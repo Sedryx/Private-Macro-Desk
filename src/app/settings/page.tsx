@@ -59,33 +59,48 @@ async function getSettingsPageData() {
 
 export default async function SettingsPage() {
   const data = await getSettingsPageData();
+  const language = data?.settings.language === "fr" ? "fr" : "en";
+  const pageCopy = language === "fr"
+    ? {
+        eyebrow: "Workspace / Reglages",
+        title: "Reglages du desk",
+        description: "Preferences privees pour l'affichage, les traders et l'etat des sources. Aucun secret n'est affiche ici.",
+        unavailableTitle: "Reglages indisponibles",
+        unavailableDescription: "L'app ne peut pas joindre PostgreSQL. Demarre la base et verifie DATABASE_URL, puis recharge cette page.",
+      }
+    : {
+        eyebrow: "Workspace / Settings",
+        title: "Desk settings",
+        description: "Private workspace preferences for display, traders and source visibility. No secrets are shown here.",
+        unavailableTitle: "Settings unavailable",
+        unavailableDescription: "The app cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page.",
+      };
 
   return (
     <>
       <PageHeader
-        eyebrow="Workspace / Settings"
-        title="Desk settings"
-        description="Private workspace preferences for display, traders and source visibility. No secrets are shown here."
+        eyebrow={pageCopy.eyebrow}
+        title={pageCopy.title}
+        description={pageCopy.description}
       />
 
       {!data ? (
         <section className="desk-surface px-6 py-16 text-center">
           <span className="mx-auto block h-px w-8 bg-[#56615b]" />
-          <h2 className="mt-5 text-[15px] font-semibold text-[#d9ddda]">Settings unavailable</h2>
+          <h2 className="mt-5 text-[15px] font-semibold text-[#d9ddda]">{pageCopy.unavailableTitle}</h2>
           <p className="mx-auto mt-2 max-w-lg text-[13px] leading-6 text-[#78827e]">
-            The app cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page.
+            {pageCopy.unavailableDescription}
           </p>
         </section>
       ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
           <SettingsForm settings={data.settings} />
           <div className="space-y-5">
-            <TraderSettingsList users={data.users} />
-            <DataSourceStatusCards sources={data.sources} />
+            <TraderSettingsList users={data.users} language={language} />
+            <DataSourceStatusCards sources={data.sources} language={language} />
           </div>
         </div>
       )}
     </>
   );
 }
-

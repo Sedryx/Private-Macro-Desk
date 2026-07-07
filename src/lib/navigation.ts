@@ -2,17 +2,18 @@ export type NavigationSection = "Desk" | "Markets" | "Workspace";
 
 export type NavigationItem = {
   label: string;
+  labelFr: string;
   href: string;
   section: NavigationSection;
 };
 
 export const navigationItems: NavigationItem[] = [
-  { label: "Dashboard", href: "/dashboard", section: "Desk" },
-  { label: "Watchlist", href: "/watchlist", section: "Desk" },
-  { label: "Journal", href: "/journal", section: "Desk" },
-  { label: "Macro", href: "/macro", section: "Markets" },
-  { label: "Calendar", href: "/calendar", section: "Markets" },
-  { label: "Interest Rates", href: "/central-banks", section: "Markets" },
-  { label: "Research", href: "/research", section: "Workspace" },
-  { label: "Settings", href: "/settings", section: "Workspace" },
+  { label: "Dashboard", labelFr: "Tableau de bord", href: "/dashboard", section: "Desk" },
+  { label: "Watchlist", labelFr: "Watchlists", href: "/watchlist", section: "Desk" },
+  { label: "Journal", labelFr: "Journal", href: "/journal", section: "Desk" },
+  { label: "Macro", labelFr: "Macro", href: "/macro", section: "Markets" },
+  { label: "Calendar", labelFr: "Calendrier", href: "/calendar", section: "Markets" },
+  { label: "Interest Rates", labelFr: "Taux d'interet", href: "/central-banks", section: "Markets" },
+  { label: "Research", labelFr: "Recherche", href: "/research", section: "Workspace" },
+  { label: "Settings", labelFr: "Reglages", href: "/settings", section: "Workspace" },
 ];

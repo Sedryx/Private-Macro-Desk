@@ -15,7 +15,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const settings = await getOrCreateWorkspaceSettings();
 
   return (
-    <html lang="en">
+    <html lang={settings.language === "fr" ? "fr" : "en"}>
       <body>
         <AppShell settings={settings}>{children}</AppShell>
       </body>

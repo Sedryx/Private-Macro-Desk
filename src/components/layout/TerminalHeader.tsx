@@ -11,16 +11,26 @@ const clocks = [
   { label: "TYO", zone: "Asia/Tokyo" },
 ] as const;
 
-const feedItems = [
-  "MACRO DATA // FRED · EUROSTAT · ECB",
-  "CALENDAR // FOREX FACTORY WEEKLY",
-  "DESK // PRIVATE WORKSPACE",
-  "EXECUTION // DISABLED",
-];
+const feedItems = {
+  en: [
+    "MACRO DATA // FRED - EUROSTAT - ECB",
+    "CALENDAR // FOREX FACTORY WEEKLY",
+    "DESK // PRIVATE WORKSPACE",
+    "EXECUTION // DISABLED",
+  ],
+  fr: [
+    "DONNEES MACRO // FRED - EUROSTAT - ECB",
+    "CALENDRIER // FOREX FACTORY HEBDO",
+    "DESK // WORKSPACE PRIVE",
+    "EXECUTION // DESACTIVEE",
+  ],
+} as const;
 
-export function TerminalHeader() {
+export function TerminalHeader({ language = "en" }: { language?: string }) {
   const [now, setNow] = useState<Date | null>(null);
   const [sessionsOpen, setSessionsOpen] = useState(false);
+  const isFr = language === "fr";
+  const items = isFr ? feedItems.fr : feedItems.en;
 
   useEffect(() => {
     const update = () => setNow(new Date());
@@ -38,7 +48,7 @@ export function TerminalHeader() {
       >
         <span className="size-1.5 rounded-full bg-[var(--positive)] shadow-[0_0_8px_rgba(22,163,74,.55)]" />
         <span className="terminal-label text-[#9a9a9a]">
-          Session // {now ? activeSessionName(now) : "--"}
+          Session // {now ? activeSessionName(now, language) : "--"}
         </span>
       </button>
 
@@ -53,9 +63,9 @@ export function TerminalHeader() {
         ))}
       </div>
 
-      <div className="min-w-0 flex-1 overflow-hidden" aria-label="Desk data status">
+      <div className="min-w-0 flex-1 overflow-hidden" aria-label={isFr ? "Statut des donnees du desk" : "Desk data status"}>
         <div className="terminal-ticker-track">
-          {[...feedItems, ...feedItems].map((item, index) => (
+          {[...items, ...items].map((item, index) => (
             <span key={item + index} className="px-6 text-[9px] uppercase tracking-[0.1em] text-[#676767]">
               {item}
             </span>
@@ -63,7 +73,7 @@ export function TerminalHeader() {
         </div>
       </div>
       {sessionsOpen && now ? (
-        <MarketSessions now={now} onClose={() => setSessionsOpen(false)} />
+        <MarketSessions now={now} language={language} onClose={() => setSessionsOpen(false)} />
       ) : null}
     </header>
   );

@@ -10,8 +10,9 @@ import {
 
 const sections: NavigationSection[] = ["Desk", "Markets", "Workspace"];
 
-export function Sidebar() {
+export function Sidebar({ language = "en" }: { language?: string }) {
   const pathname = usePathname();
+  const isFr = language === "fr";
 
   return (
     <aside className="w-full min-w-0 max-w-[100vw] overflow-hidden border-b border-[#27282a] bg-[var(--sidebar)] lg:sticky lg:top-0 lg:flex lg:h-screen lg:max-w-none lg:flex-col lg:border-r lg:border-b-0">
@@ -27,13 +28,13 @@ export function Sidebar() {
       </div>
 
       <nav
-        aria-label="Main navigation"
+        aria-label={isFr ? "Navigation principale" : "Main navigation"}
         className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto px-3 py-3 lg:flex-1 lg:flex-col lg:gap-5 lg:overflow-visible lg:px-3 lg:py-4"
       >
         {sections.map((section) => (
           <div key={section} className="flex shrink-0 gap-1 lg:block">
             <p className="mb-1.5 hidden px-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#505052] lg:block">
-              {section}
+              {translateSection(section, isFr)}
             </p>
             <div className="flex gap-1 lg:flex-col">
               {navigationItems
@@ -56,9 +57,9 @@ export function Sidebar() {
                         <span className="absolute inset-y-2 left-0 w-px bg-[#d4d4d4]" />
                       ) : null}
                       <span className="hidden w-5 font-mono text-[8px] tracking-wider text-[#555558] lg:inline">
-                        {item.label.slice(0, 2).toUpperCase()}
+                        {(isFr ? item.labelFr : item.label).slice(0, 2).toUpperCase()}
                       </span>
-                      <span>{item.label}</span>
+                      <span>{isFr ? item.labelFr : item.label}</span>
                     </Link>
                   );
                 })}
@@ -68,4 +69,11 @@ export function Sidebar() {
       </nav>
     </aside>
   );
+}
+
+function translateSection(section: NavigationSection, isFr: boolean) {
+  if (!isFr) return section;
+  if (section === "Markets") return "Marches";
+  if (section === "Workspace") return "Espace";
+  return "Desk";
 }
