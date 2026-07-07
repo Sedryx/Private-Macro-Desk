@@ -1,28 +1,27 @@
-import type { OnsSeriesConfig } from "@/lib/data/global-series";
+﻿import type { OnsSeriesConfig } from "@/lib/data/global-series";
 import { replaceMacroSeries, type MacroObservation } from "@/lib/data/macroStore";
+import { prepareGlobalObservations } from "@/lib/data/global-validation";
 
-const ONS_BASE_URL = "https://api.ons.gov.uk/timeseries/";
+const ONS_GENERATOR_URL = "https://www.ons.gov.uk/generator";
 
-type OnsPeriod = { date?: string; value?: string; month?: string; quarter?: string; year?: string };
-type OnsResponse = { months?: OnsPeriod[]; quarters?: OnsPeriod[]; years?: OnsPeriod[] };
-
-export async function fetchOnsTimeSeries(datasetId: string, timeseriesId: string): Promise<MacroObservation[]> {
-  const url = new URL(`${timeseriesId.toLowerCase()}/dataset/${datasetId.toLowerCase()}/data`, ONS_BASE_URL);
+export async function fetchOnsTimeSeries(config: OnsSeriesConfig): Promise<MacroObservation[]> {
+  const url = new URL(ONS_GENERATOR_URL);
+  url.searchParams.set("format", "csv");
+  url.searchParams.set("uri", config.generatorUri);
   const response = await fetch(url, {
     headers: {
-      Accept: "application/json",
+      Accept: "text/csv,*/*",
       "User-Agent": "Private Macro Desk/1.0 private research app",
     },
     signal: AbortSignal.timeout(30_000),
   });
-  if (!response.ok) throw new Error(`ONS request failed for ${datasetId}/${timeseriesId}: HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`ONS request failed for ${config.datasetId}/${config.timeseriesId}: HTTP ${response.status}`);
 
-  const payload = (await response.json()) as OnsResponse;
-  return parseOnsPayload(payload);
+  return parseOnsGeneratorCsv(await response.text(), config.frequency);
 }
 
 export async function syncOnsSeries(config: OnsSeriesConfig) {
-  const observations = await fetchOnsTimeSeries(config.datasetId, config.timeseriesId);
+  const observations = prepareGlobalObservations(config, await fetchOnsTimeSeries(config));
   return replaceMacroSeries({
     code: config.code,
     name: config.name,
@@ -35,33 +34,63 @@ export async function syncOnsSeries(config: OnsSeriesConfig) {
   });
 }
 
-export function parseOnsPayload(payload: OnsResponse): MacroObservation[] {
-  const periods = payload.months?.length
-    ? payload.months
-    : payload.quarters?.length
-      ? payload.quarters
-      : payload.years ?? [];
-
-  return periods.flatMap((period) => {
-    const date = parseOnsDate(period);
-    const value = Number(period.value);
+export function parseOnsGeneratorCsv(csv: string, frequency: OnsSeriesConfig["frequency"] = "monthly"): MacroObservation[] {
+  return parseCsv(csv).flatMap((row) => {
+    const date = frequency === "quarterly" ? parseQuarterlyPeriod(row[0]) : parseMonthlyPeriod(row[0]);
+    const value = Number(row[1]);
     return date && Number.isFinite(value) ? [{ date, value }] : [];
   });
 }
 
-function parseOnsDate(period: OnsPeriod) {
-  if (period.date) {
-    const date = new Date(period.date + "T00:00:00.000Z");
-    if (!Number.isNaN(date.getTime())) return date;
+function parseMonthlyPeriod(value: string | undefined) {
+  if (!value) return null;
+  const match = /^(\d{4})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)$/i.exec(value.trim());
+  if (!match) return null;
+  const month = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].indexOf(match[2].toUpperCase());
+  return new Date(Date.UTC(Number(match[1]), month, 1));
+}
+
+function parseQuarterlyPeriod(value: string | undefined) {
+  if (!value) return null;
+  const text = value.trim();
+  const match = /^(\d{4})\s+Q([1-4])$/i.exec(text) ?? /^Q([1-4])\s+(\d{4})$/i.exec(text);
+  if (!match) return null;
+  const year = match[1].length === 4 ? Number(match[1]) : Number(match[2]);
+  const quarter = match[1].length === 4 ? Number(match[2]) : Number(match[1]);
+  return new Date(Date.UTC(year, (quarter - 1) * 3, 1));
+}
+
+function parseCsv(input: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+
+  for (let index = 0; index < input.length; index += 1) {
+    const character = input[index];
+    if (character === '"') {
+      if (quoted && input[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (character === "," && !quoted) {
+      row.push(field.trim().replace(/^\uFEFF/, ""));
+      field = "";
+    } else if ((character === "\n" || character === "\r") && !quoted) {
+      if (character === "\r" && input[index + 1] === "\n") index += 1;
+      row.push(field.trim().replace(/^\uFEFF/, ""));
+      if (row.some(Boolean)) rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += character;
+    }
   }
-  if (period.month) {
-    const date = new Date(period.month + "T00:00:00.000Z");
-    if (!Number.isNaN(date.getTime())) return date;
+  if (field || row.length > 0) {
+    row.push(field.trim().replace(/^\uFEFF/, ""));
+    if (row.some(Boolean)) rows.push(row);
   }
-  if (period.quarter) {
-    const match = /^(\d{4})\s*Q([1-4])$/i.exec(period.quarter);
-    if (match) return new Date(Date.UTC(Number(match[1]), (Number(match[2]) - 1) * 3, 1));
-  }
-  if (period.year && /^\d{4}$/.test(period.year)) return new Date(Date.UTC(Number(period.year), 0, 1));
-  return null;
+  return rows;
 }

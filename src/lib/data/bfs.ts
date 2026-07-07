@@ -1,5 +1,3 @@
-import type { UnresolvedOfficialSeriesConfig } from "@/lib/data/global-series";
-
-export async function syncBfsSeries(config: UnresolvedOfficialSeriesConfig): Promise<never> {
-  throw new Error(`${config.code} is not connected: ${config.discoveryHint}`);
+﻿export async function syncBfsSeries(): Promise<never> {
+  throw new Error("BFS provider is not used by the current global macro sync.");
 }

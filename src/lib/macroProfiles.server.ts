@@ -36,13 +36,17 @@ const displayConfigs: SeriesDisplayConfig[] = [
   })),
   ...OFFICIAL_GLOBAL_SERIES.map((series) => ({
     ...series,
-    sourceRef: "seriesCode" in series
-      ? `${series.provider} series ${series.seriesCode}`
-      : "timeseriesId" in series
-        ? `${series.provider} ${series.datasetId}/${series.timeseriesId}`
-        : `${series.provider} unresolved official metadata`,
+    sourceRef: globalSourceRef(series),
   })),
 ];
+function globalSourceRef(series: (typeof OFFICIAL_GLOBAL_SERIES)[number]) {
+  if ("seriesCode" in series) return `${series.provider} series ${series.seriesCode}`;
+  if ("timeseriesId" in series) return `${series.provider} ${series.datasetId}/${series.timeseriesId}`;
+  if ("cubeId" in series) return `${series.provider} cube ${series.cubeId}`;
+  if ("seriesId" in series) return `${series.provider} series ${series.seriesId}`;
+  if ("seriesPath" in series) return `${series.provider} ${series.seriesPath}`;
+  return `${series.provider} ${series.seriesKey}`;
+}
 const configByCode = new Map(displayConfigs.map((series) => [series.code, series]));
 const regionByCode = new Map(
   displayConfigs.map((series) => [
@@ -137,7 +141,7 @@ function hydrateMetric(
     metric.sourceUpdatedDate = providerUpdatedAt ? formatDate(providerUpdatedAt) : undefined;
     metric.releaseType = releaseType ?? undefined;
     metric.stale = stale;
-    metric.context = `${config.name} · ${config.sourceRef}`;
+    metric.context = `${config.name} Ã‚Â· ${config.sourceRef}`;
   }
 
   if (config.ui.snapshotLabel) {
@@ -198,21 +202,44 @@ function applyUnitedStatesTrends(
 
 function markConnectedRegions(profiles: CountryMacroProfile[]) {
   for (const region of MACRO_REGION_CONFIGS) {
-    if (region.dataStatus !== "live") continue;
     const profile = profiles.find((item) => item.id === region.profileId);
     if (!profile || region.profileId === "united-states") continue;
 
-    const hasLiveMetric = Object.values(profile.sections).some((section) =>
-      section.indicators.some((metric) => isLiveSource(metric.source)),
-    );
-    if (hasLiveMetric) {
+    const allMetrics = Object.values(profile.sections).flatMap((section) => section.indicators);
+    const connectedMetrics = allMetrics.filter((metric) => isLiveSource(metric.source));
+    const coreIds = coreMetricIds(profile.countryCode);
+    const coreMetrics = allMetrics.filter((metric) => coreIds.includes(metric.id));
+    const connectedCore = coreMetrics.filter((metric) => isLiveSource(metric.source));
+
+    if (connectedMetrics.length === 0) {
+      profile.stance = "Coming soon";
+      profile.stanceTone = "neutral";
+      continue;
+    }
+
+    if (connectedCore.length < coreIds.length) {
+      profile.stance = "Partial data";
+      profile.stanceTone = "neutral";
+    } else if (connectedCore.some((metric) => metric.stale)) {
+      profile.stance = "Stale data";
+      profile.stanceTone = "neutral";
+    } else {
       profile.stance = "Live data";
       profile.stanceTone = "neutral";
-      profile.summary = region.profileId === "eurozone"
-        ? "Euro Area policy rates come directly from the ECB Data Portal; inflation, labour and growth come from Eurostat. FRED is used only when an official request fails."
-        : `${region.regionName} macro data is synchronized server-side from ${region.sourceLabels.join(", ")}.`;
     }
+
+    profile.summary = region.profileId === "eurozone"
+      ? "Euro Area policy rates come directly from the ECB Data Portal; inflation, labour and growth come from Eurostat. FRED is used only when an official request fails."
+      : `${region.regionName} macro data is synchronized server-side from ${region.sourceLabels.join(", ")}.`;
   }
+}
+
+function coreMetricIds(countryCode: string) {
+  if (countryCode === "EU") return ["eu-deposit", "eu-hicp", "eu-unemployment", "eu-eurusd"];
+  if (countryCode === "CH") return ["ch-policy", "ch-cpi", "ch-unemployment", "ch-usd"];
+  if (countryCode === "UK") return ["uk-policy", "uk-cpi", "uk-unemployment", "uk-fx"];
+  if (countryCode === "JP") return ["jp-policy", "jp-cpi", "jp-unemployment", "jp-fx"];
+  return [];
 }
 
 function applyThreeMonthTrend(
@@ -319,6 +346,9 @@ function normalizeSource(source: string | null, releaseType: string | null): Mac
   if (source === "ONS") return "ONS";
   if (source === "BoE") return "BoE";
   if (source === "BOJ") return "BOJ";
+  if (source === "DBnomics") return "DBnomics";
+  if (source === "FRED/OECD") return "FRED/OECD";
+  if (source === "FRED / Japan Cabinet Office") return "FRED / Japan Cabinet Office";
   if (source === "e-Stat") return "e-Stat";
   if (source === "Eurostat") {
     return releaseType === "flash" ? "Eurostat flash" : "Eurostat";
@@ -332,7 +362,8 @@ function isLiveSource(source: MacroSource) {
     source === "Eurostat flash" || source === "FRED fallback" ||
     source === "FRED" || source === "FRED / calculated" ||
     source === "SNB" || source === "BFS" || source === "ONS" ||
-    source === "BoE" || source === "BOJ" || source === "e-Stat";
+    source === "BoE" || source === "BOJ" || source === "DBnomics" ||
+    source === "FRED/OECD" || source === "FRED / Japan Cabinet Office" || source === "e-Stat";
 }
 
 function isStale(date: Date, maxAgeDays?: number) {
@@ -341,3 +372,6 @@ function isStale(date: Date, maxAgeDays?: number) {
     Date.now() - date.getTime() > maxAgeDays * 24 * 60 * 60 * 1000
   );
 }
+
+
+

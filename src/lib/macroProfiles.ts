@@ -1,4 +1,4 @@
-export type MacroSectionKey =
+﻿export type MacroSectionKey =
   | "centralBank"
   | "inflation"
   | "labour"
@@ -19,6 +19,9 @@ export type MacroSource =
   | "ONS"
   | "BoE"
   | "BOJ"
+  | "DBnomics"
+  | "FRED/OECD"
+  | "FRED / Japan Cabinet Office"
   | "e-Stat"
   | "Not connected"
   | "Data unavailable"
@@ -224,7 +227,7 @@ function markProfileAsComingSoon(profile: CountryMacroProfile) {
       id: indicator.id,
       label: indicator.label,
       value: "Not connected yet",
-      context: "Static placeholder — official data source not connected",
+      context: "Static placeholder â€” official data source not connected",
       source: "Coming soon",
       history: [],
     }));
@@ -287,8 +290,11 @@ function prepareEuroAreaProfile(profile: CountryMacroProfile) {
     ratesMarkets: section(
       "Euro Area rates & markets",
       "Rates & Markets",
-      "No additional market series connected in this phase.",
-      [notConnectedMetric("eu-markets", "Euro Area Market Indicators")],
+      "EUR/USD and the German Bund 10Y are connected from official/market data sources when synced.",
+      [
+        notConnectedMetric("eu-eurusd", "EUR/USD"),
+        notConnectedMetric("eu-bund-10y", "Germany 10Y Bund Yield"),
+      ],
     ),
   };
 }
@@ -303,7 +309,7 @@ profiles.push({
   centralBank: "Federal Reserve",
   currency: "USD",
   policyRate: "4.50%",
-  nextMeeting: "30 Jul · demo placeholder",
+  nextMeeting: "30 Jul Â· demo placeholder",
   stance: "Restrictive / data dependent",
   stanceTone: "tight",
   summary: "Disinflation is progressing slowly while activity and labour remain resilient enough to keep the Fed cautious.",
@@ -363,7 +369,7 @@ profiles.push({
   centralBank: "European Central Bank",
   currency: "EUR",
   policyRate: "2.00%",
-  nextMeeting: "24 Jul · demo placeholder",
+  nextMeeting: "24 Jul Â· demo placeholder",
   stance: "Gradual easing",
   stanceTone: "easing",
   summary: "Inflation is nearing target, but weak manufacturing and subdued growth keep the ECB on an easing path.",
@@ -382,7 +388,7 @@ profiles.push({
     centralBank: section("European Central Bank", "Central Bank", "Deposit rate, latest decision and market direction.", [
       metric("eu-policy", "Deposit Rate", "2.00%", 3.75, 2, "-25 bp"),
       metric("eu-decision", "Previous Decision", "Cut 25 bp", 80, 30, "Easing", "Demo hawkishness index"),
-      metric("eu-balance", "Balance Sheet", "€6.4tn", 6.85, 6.4, "Run-off"),
+      metric("eu-balance", "Balance Sheet", "â‚¬6.4tn", 6.85, 6.4, "Run-off"),
     ]),
     inflation: section("Eurozone inflation pulse", "Inflation", "Headline, core and producer-price pressure.", [
       metric("eu-hicp", "HICP YoY", "2.2%", 2.9, 2.2, "Flat"),
@@ -417,7 +423,7 @@ profiles.push({
   centralBank: "Swiss National Bank",
   currency: "CHF",
   policyRate: "0.25%",
-  nextMeeting: "25 Sep · demo placeholder",
+  nextMeeting: "25 Sep Â· demo placeholder",
   stance: "Easing bias / FX aware",
   stanceTone: "easing",
   summary: "Low inflation gives the SNB room to stay accommodative, with franc strength central to the reaction function.",
@@ -471,7 +477,7 @@ profiles.push({
   centralBank: "Bank of England",
   currency: "GBP",
   policyRate: "4.25%",
-  nextMeeting: "7 Aug · demo placeholder",
+  nextMeeting: "7 Aug Â· demo placeholder",
   stance: "Cautious easing",
   stanceTone: "neutral",
   summary: "Sticky services inflation and wages are slowing the pace of easing despite softer domestic demand.",
@@ -489,7 +495,7 @@ profiles.push({
   sections: {
     centralBank: section("Bank of England", "Central Bank", "Bank Rate, vote balance and guidance.", [
       metric("uk-policy", "Bank Rate", "4.25%", 5.25, 4.25, "0 bp"),
-      metric("uk-vote", "MPC Vote", "7–2 hold", 90, 43, "Split", "Demo hawkishness index"),
+      metric("uk-vote", "MPC Vote", "7â€“2 hold", 90, 43, "Split", "Demo hawkishness index"),
       metric("uk-guidance", "Policy Direction", "Gradual cuts", 72, 38, "Easing bias"),
     ]),
     inflation: section("UK inflation pulse", "Inflation", "Headline, core and services-price pressure.", [
@@ -525,7 +531,7 @@ profiles.push({
   centralBank: "Bank of Japan",
   currency: "JPY",
   policyRate: "0.50%",
-  nextMeeting: "31 Jul · demo placeholder",
+  nextMeeting: "31 Jul Â· demo placeholder",
   stance: "Gradual normalisation",
   stanceTone: "neutral",
   summary: "The BoJ is normalising carefully as inflation and wages hold above the old regime, while yen sensitivity remains high.",
@@ -543,7 +549,7 @@ profiles.push({
   sections: {
     centralBank: section("Bank of Japan", "Central Bank", "Policy rate, purchase pace and normalisation signal.", [
       metric("jp-policy", "Policy Rate", "0.50%", -0.1, 0.5, "0 bp"),
-      metric("jp-purchases", "JGB Purchases", "¥4.1tn / month", 5.7, 4.1, "Tapering"),
+      metric("jp-purchases", "JGB Purchases", "Â¥4.1tn / month", 5.7, 4.1, "Tapering"),
       metric("jp-guidance", "Policy Direction", "Normalising", 20, 57, "Gradual", "Demo hawkishness index"),
     ]),
     inflation: section("Japan inflation pulse", "Inflation", "National, core and Tokyo price momentum.", [
@@ -583,3 +589,5 @@ if (euroAreaProfile) {
 }
 
 export const countryMacroProfiles = profiles;
+
+

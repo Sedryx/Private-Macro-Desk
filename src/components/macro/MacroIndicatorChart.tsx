@@ -64,18 +64,6 @@ export function MacroIndicatorChart({
         tick={{ fill: chartTheme.axis, fontSize: 9 }}
         tickFormatter={formatAxis}
       />
-      {hasComparison ? (
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          axisLine={false}
-          tickLine={false}
-          width={52}
-          domain={["auto", "auto"]}
-          tick={{ fill: "#6f91b8", fontSize: 9 }}
-          tickFormatter={formatAxis}
-        />
-      ) : null}
       <Tooltip
         cursor={{ stroke: chartTheme.cursor, strokeDasharray: "2 3" }}
         contentStyle={{
@@ -101,7 +89,7 @@ export function MacroIndicatorChart({
         {mode === "bars" ? (
           <BarChart
             data={data}
-            margin={{ top: 10, right: hasComparison ? 0 : 10, bottom: 0, left: -8 }}
+            margin={{ top: 10, right: 10, bottom: 0, left: -8 }}
             accessibilityLayer
             barGap={1}
           >
@@ -125,7 +113,7 @@ export function MacroIndicatorChart({
             </Bar>
             {comparison ? (
               <Bar
-                yAxisId="right"
+                yAxisId="left"
                 dataKey="comparisonValue"
                 name={comparison.label}
                 fill="#60a5fa"
@@ -153,7 +141,7 @@ export function MacroIndicatorChart({
               isAnimationActive={false}
             />
             <Line
-              yAxisId="right"
+              yAxisId="left"
               type="monotone"
               dataKey="comparisonValue"
               name={comparison.label}

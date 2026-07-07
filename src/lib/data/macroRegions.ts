@@ -1,4 +1,4 @@
-import { MacroCategory } from "@prisma/client";
+﻿import { MacroCategory } from "@prisma/client";
 
 import type { MacroSectionKey } from "@/lib/macroProfiles";
 
@@ -109,7 +109,7 @@ export const MACRO_REGION_CONFIGS: MacroRegionConfig[] = [
     centralBank: "Swiss National Bank",
     currency: "CHF",
     dataStatus: "live",
-    sourceLabels: ["SNB", "BFS"],
+    sourceLabels: ["SNB"],
     indicators: [],
   },
   {
@@ -129,7 +129,7 @@ export const MACRO_REGION_CONFIGS: MacroRegionConfig[] = [
     centralBank: "Bank of Japan",
     currency: "JPY",
     dataStatus: "live",
-    sourceLabels: ["BOJ", "e-Stat"],
+    sourceLabels: ["BOJ", "DBnomics", "FRED/OECD", "FRED / Japan Cabinet Office"],
     indicators: [],
   },
 ];
@@ -172,3 +172,4 @@ function ui(
 ): MacroUiBinding {
   return { section, metricId, display, change, snapshotLabel, profileField };
 }
+

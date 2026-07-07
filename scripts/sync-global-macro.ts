@@ -1,26 +1,56 @@
 import "dotenv/config";
 
-import { syncBfsSeries } from "../src/lib/data/bfs";
 import { syncBoeSeries } from "../src/lib/data/boe";
 import { syncBojSeries } from "../src/lib/data/boj";
-import { syncEstatSeries } from "../src/lib/data/estat";
-import { OFFICIAL_GLOBAL_SERIES, type OfficialGlobalSeriesConfig } from "../src/lib/data/global-series";
+import { syncDbnomicsSeries } from "../src/lib/data/dbnomics";
+import { fetchEcbSeries } from "../src/lib/data/ecb";
+import { fetchFredObservations, parseFredObservations } from "../src/lib/data/fred";
+import { OFFICIAL_GLOBAL_SERIES, type EcbGlobalSeriesConfig, type FredGlobalSeriesConfig, type OfficialGlobalSeriesConfig } from "../src/lib/data/global-series";
+import { prepareGlobalObservations } from "../src/lib/data/global-validation";
+import { replaceMacroSeries } from "../src/lib/data/macroStore";
 import { syncOnsSeries } from "../src/lib/data/ons";
 import { syncSnbSeries } from "../src/lib/data/snb";
 
 type SyncResult = { code: string; source: string; valueCount: number; latestDate?: Date };
 type SyncFailure = { code: string; provider: string; message: string };
 
+async function syncFredGlobalSeries(config: FredGlobalSeriesConfig): Promise<SyncResult> {
+  const raw = await fetchFredObservations(config.seriesId);
+  const observations = prepareGlobalObservations(config, parseFredObservations(raw));
+  return replaceMacroSeries({
+    code: config.code,
+    name: config.name,
+    category: config.category,
+    country: config.country,
+    unit: config.unit,
+    source: config.provider,
+    providerUpdatedAt: null,
+    observations,
+  });
+}
+
+async function syncEcbGlobalSeries(config: EcbGlobalSeriesConfig): Promise<SyncResult> {
+  const result = await fetchEcbSeries(config.seriesKey, { lastNObservations: config.lastNObservations });
+  const observations = prepareGlobalObservations(config, result.observations);
+  return replaceMacroSeries({
+    code: config.code,
+    name: config.name,
+    category: config.category,
+    country: config.country,
+    unit: config.unit,
+    source: "ECB",
+    providerUpdatedAt: result.providerUpdatedAt,
+    observations,
+  });
+}
 async function syncSeries(config: OfficialGlobalSeriesConfig): Promise<SyncResult> {
   if (config.provider === "BoE") return syncBoeSeries(config);
-  if (config.provider === "ONS") {
-    if ("status" in config) throw new Error(`${config.code} is not connected: ${config.discoveryHint}`);
-    return syncOnsSeries(config);
-  }
+  if (config.provider === "ONS") return syncOnsSeries(config);
   if (config.provider === "SNB") return syncSnbSeries(config);
-  if (config.provider === "BFS") return syncBfsSeries(config);
   if (config.provider === "BOJ") return syncBojSeries(config);
-  return syncEstatSeries(config);
+  if (config.provider === "DBnomics") return syncDbnomicsSeries(config);
+  if (config.provider === "ECB") return syncEcbGlobalSeries(config);
+  return syncFredGlobalSeries(config);
 }
 
 async function main() {
@@ -31,11 +61,14 @@ async function main() {
     try {
       const result = await syncSeries(config);
       results.push(result);
-      console.log(`[global macro] ${config.code}: ${result.valueCount} values from ${result.source}`);
+      console.log(
+        `[global macro] ${config.code}: ${result.valueCount} values from ${result.source}` +
+          (result.latestDate ? ` latest=${result.latestDate.toISOString().slice(0, 10)}` : ""),
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown provider error";
       failures.push({ code: config.code, provider: config.provider, message });
-      console.warn(`[global macro] ${config.code}: skipped (${config.provider}) - ${message}`);
+      console.warn(`[global macro] ${config.code}: preserved existing DB values (${config.provider}) - ${message}`);
     }
   }
 
@@ -55,9 +88,7 @@ async function main() {
   const { prisma } = await import("../src/lib/prisma");
   await prisma.$disconnect();
 
-  if (results.length === 0) {
-    process.exitCode = 1;
-  }
+  if (results.length === 0) process.exitCode = 1;
 }
 
 main().catch(async (error: unknown) => {

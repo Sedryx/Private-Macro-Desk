@@ -1,5 +1,6 @@
-import type { BoeSeriesConfig } from "@/lib/data/global-series";
+﻿import type { BoeSeriesConfig } from "@/lib/data/global-series";
 import { replaceMacroSeries, type MacroObservation } from "@/lib/data/macroStore";
+import { prepareGlobalObservations } from "@/lib/data/global-validation";
 
 const BOE_IADB_URL = "https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp";
 
@@ -26,7 +27,7 @@ export async function fetchBoeSeries(seriesCode: string): Promise<MacroObservati
 }
 
 export async function syncBoeSeries(config: BoeSeriesConfig) {
-  const observations = await fetchBoeSeries(config.seriesCode);
+  const observations = prepareGlobalObservations(config, await fetchBoeSeries(config.seriesCode));
   return replaceMacroSeries({
     code: config.code,
     name: config.name,
@@ -45,9 +46,8 @@ export function parseBoeCsv(csv: string, seriesCode: string): MacroObservation[]
   if (headers.length === 0) return [];
 
   const dateIndex = headers.findIndex((header) => /date/i.test(header));
-  const valueIndex = headers.findIndex((header) => header.toUpperCase() === seriesCode.toUpperCase()) >= 0
-    ? headers.findIndex((header) => header.toUpperCase() === seriesCode.toUpperCase())
-    : headers.findIndex((header) => /value/i.test(header) || /iu|xu/i.test(header));
+  const directIndex = headers.findIndex((header) => header.toUpperCase() === seriesCode.toUpperCase());
+  const valueIndex = directIndex >= 0 ? directIndex : headers.findIndex((header) => /value/i.test(header) || /iu|xu/i.test(header));
   if (dateIndex < 0 || valueIndex < 0) return [];
 
   return rows.slice(1).flatMap((row) => {
@@ -59,7 +59,7 @@ export function parseBoeCsv(csv: string, seriesCode: string): MacroObservation[]
 
 function parseBoeDate(value: string | undefined) {
   if (!value) return null;
-  const direct = new Date(value + "T00:00:00.000Z");
+  const direct = new Date(`${value}T00:00:00.000Z`);
   if (!Number.isNaN(direct.getTime())) return direct;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : new Date(Date.UTC(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate()));
