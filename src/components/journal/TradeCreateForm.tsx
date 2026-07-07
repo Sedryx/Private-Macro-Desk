@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import {
   createTrade,
@@ -15,6 +15,8 @@ type SelectOption = {
 
 const initialState: JournalActionState = { status: "idle", message: "" };
 
+const NONE_VALUE = "NONE";
+
 export function TradeCreateForm({ assets, users }: { assets: SelectOption[]; users: SelectOption[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(createTrade, initialState);
@@ -23,6 +25,23 @@ export function TradeCreateForm({ assets, users }: { assets: SelectOption[]; use
     : users.length === 0
       ? "No traders are available. Run the seed before creating a trade."
       : null;
+
+  const [dailyTrend, setDailyTrend] = useState(NONE_VALUE);
+  const [entryZone, setEntryZone] = useState(NONE_VALUE);
+  const [entrySignal, setEntrySignal] = useState(NONE_VALUE);
+  const [handledState, setHandledState] = useState(state);
+
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.status === "success") {
+      setDailyTrend(NONE_VALUE);
+      setEntryZone(NONE_VALUE);
+      setEntrySignal(NONE_VALUE);
+    }
+  }
+
+  const setupScore = [dailyTrend, entryZone, entrySignal].filter((value) => value !== NONE_VALUE).length;
+  const isSetupValid = setupScore === 3;
 
   useEffect(() => {
     if (state.status === "success") {
@@ -83,6 +102,85 @@ export function TradeCreateForm({ assets, users }: { assets: SelectOption[]; use
             <NumberField name="stopLoss" label="Stop loss" placeholder="Optional" />
             <NumberField name="takeProfit" label="Take profit" placeholder="Optional" />
             <NumberField name="riskPercent" label="Risk percent" placeholder="Optional" />
+          </div>
+
+          <div className="mt-5 rounded-xl border border-[var(--line)] bg-[#0f1519] p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#707b76]">Setup checklist</p>
+                <p className="mt-1 text-[11px] text-[#78827e]">Daily trend / 4H zone / 1H signal, top-down.</p>
+              </div>
+              <span
+                className={
+                  "rounded-full border px-2.5 py-1 text-[9px] font-semibold tracking-[0.08em] " +
+                  (isSetupValid
+                    ? "border-[#176b35] bg-[var(--positive-soft)] text-[#3fca6f]"
+                    : "border-[#3b4449] bg-[#171d21] text-[#9ca6a1]")
+                }
+              >
+                {setupScore}/3 {isSetupValid ? "· Valid setup" : "· Incomplete"}
+              </span>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <FieldLabel label="Strategy">
+                <input
+                  name="strategyCode"
+                  type="text"
+                  defaultValue="EURUSD_TREND_D4H1H"
+                  className="desk-field px-3 py-2.5 text-[12px]"
+                />
+              </FieldLabel>
+
+              <FieldLabel label="Daily trend">
+                <select
+                  name="dailyTrend"
+                  value={dailyTrend}
+                  onChange={(event) => setDailyTrend(event.target.value)}
+                  className="desk-field px-3 py-2.5 text-[12px]"
+                >
+                  <option value={NONE_VALUE}>Not set</option>
+                  <option value="BULLISH">Bullish (EMA50 &gt; EMA200)</option>
+                  <option value="BEARISH">Bearish (EMA50 &lt; EMA200)</option>
+                  <option value="RANGE">Range / flat EMAs</option>
+                </select>
+              </FieldLabel>
+
+              <FieldLabel label="4H entry zone">
+                <select
+                  name="entryZone"
+                  value={entryZone}
+                  onChange={(event) => setEntryZone(event.target.value)}
+                  className="desk-field px-3 py-2.5 text-[12px]"
+                >
+                  <option value={NONE_VALUE}>Not reached</option>
+                  <option value="EMA50_PULLBACK">EMA50 pullback</option>
+                  <option value="SUPPORT_RESISTANCE">Support / resistance</option>
+                  <option value="FIB_RETRACEMENT">Fib retracement 38-61%</option>
+                </select>
+              </FieldLabel>
+
+              <FieldLabel label="1H signal">
+                <select
+                  name="entrySignal"
+                  value={entrySignal}
+                  onChange={(event) => setEntrySignal(event.target.value)}
+                  className="desk-field px-3 py-2.5 text-[12px]"
+                >
+                  <option value={NONE_VALUE}>No signal yet</option>
+                  <option value="ENGULFING">Engulfing candle</option>
+                  <option value="PIN_BAR">Pin bar</option>
+                  <option value="RSI_OVERSOLD">RSI exiting oversold</option>
+                  <option value="RSI_OVERBOUGHT">RSI exiting overbought</option>
+                </select>
+              </FieldLabel>
+            </div>
+
+            {!isSetupValid ? (
+              <p className="mt-3 text-[10px] text-[#8d9792]">
+                All three steps must be set to mark this as a valid, rule-based setup rather than a discretionary trade.
+              </p>
+            ) : null}
           </div>
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">

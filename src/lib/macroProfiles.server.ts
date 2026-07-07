@@ -142,7 +142,7 @@ function hydrateMetric(
     metric.sourceUpdatedDate = providerUpdatedAt ? formatDate(providerUpdatedAt) : undefined;
     metric.releaseType = releaseType ?? undefined;
     metric.stale = stale;
-    metric.context = `${config.name} Ãƒâ€šÃ‚Â· ${config.sourceRef}`;
+    metric.context = `${config.name} · ${config.sourceRef}`;
   }
 
   if (config.ui.snapshotLabel) {

@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
-import type { TradeDirection, TradeStatus } from "@prisma/client";
+import type { DailyTrend, EntrySignal, EntryZone, TradeDirection, TradeStatus } from "@prisma/client";
 
 import { TradeCard } from "@/components/journal/TradeCard";
 
@@ -21,6 +21,11 @@ export type TradeView = {
   invalidation: string | null;
   result: string | null;
   mistakeTags: string[];
+  strategyCode: string | null;
+  dailyTrend: DailyTrend | null;
+  entryZone: EntryZone | null;
+  entrySignal: EntrySignal | null;
+  setupValid: boolean;
   openedAt: string | null;
   closedAt: string | null;
   createdAt: string;

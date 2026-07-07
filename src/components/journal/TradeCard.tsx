@@ -45,10 +45,18 @@ export function TradeCard({ trade, users, initialCollapsed = false }: { trade: T
             <h3 className="text-[18px] font-semibold tracking-[-0.025em] text-[#eef1ee]">{trade.asset.symbol}</h3>
             <Badge className={directionTone[trade.direction]}>{trade.direction}</Badge>
             <Badge className={statusTone[trade.status]}>{formatStatus(trade.status)}</Badge>
+            <Badge className={trade.setupValid
+              ? "border-[#176b35] bg-[var(--positive-soft)] text-[#3fca6f]"
+              : "border-[#5c4a1f] bg-[#241d0f] text-[#e0b661]"}>
+              {trade.setupValid ? "Valid setup" : "Discretionary"}
+            </Badge>
           </div>
           <p className="mt-1 text-[12px] text-[#7b8580]">{trade.asset.name}</p>
+          {trade.strategyCode ? (
+            <p className="mt-1 text-[10px] text-[#626d68]">Strategy: {trade.strategyCode}</p>
+          ) : null}
           <p className="mt-2 text-[11px] text-[#626d68]">
-            Added by {trade.user.name} Ã‚Â· {formatDate(trade.createdAt)}
+            Added by {trade.user.name} · {formatDate(trade.createdAt)}
           </p>
         </div>
 
@@ -133,6 +141,14 @@ export function TradeCard({ trade, users, initialCollapsed = false }: { trade: T
 
       <div className="grid gap-6 px-5 py-6 sm:px-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
         <div className="space-y-5">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#707b76]">Setup checklist</p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-3">
+              <ChecklistCell label="Daily trend" value={formatEnum(trade.dailyTrend)} />
+              <ChecklistCell label="4H entry zone" value={formatEnum(trade.entryZone)} />
+              <ChecklistCell label="1H signal" value={formatEnum(trade.entrySignal)} />
+            </div>
+          </div>
           <TextBlock label="Thesis" value={trade.thesis} />
           <TextBlock label="Invalidation" value={trade.invalidation} empty="No invalidation recorded." />
           <div className="grid gap-5 sm:grid-cols-2">
@@ -269,4 +285,23 @@ function formatDate(value: string | null) {
 
 function formatStatus(status: TradeView["status"]) {
   return status.charAt(0) + status.slice(1).toLowerCase();
+}
+
+function formatEnum(value: string | null) {
+  if (!value) return "Not set";
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function ChecklistCell({ label, value }: { label: string; value: string }) {
+  const isSet = value !== "Not set";
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${isSet ? "border-[#2f5c3c] bg-[#102018]" : "border-[var(--line)] bg-[#0f1519]"}`}>
+      <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-[#65706b]">{label}</p>
+      <p className={`mt-1 text-[12px] font-medium ${isSet ? "text-[#dce8de]" : "text-[#626d68]"}`}>{value}</p>
+    </div>
+  );
 }

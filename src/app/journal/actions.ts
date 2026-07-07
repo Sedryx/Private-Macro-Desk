@@ -5,6 +5,9 @@ import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  DailyTrend,
+  EntrySignal,
+  EntryZone,
   Prisma,
   TradeDirection,
   TradeStatus,
@@ -37,6 +40,11 @@ export async function createTrade(
   const status = parseEnum(getString(formData, "status"), TradeStatus);
   const thesis = getString(formData, "thesis").trim();
   const invalidation = getString(formData, "invalidation").trim();
+  const strategyCode = getString(formData, "strategyCode").trim();
+  const dailyTrend = parseOptionalEnum(getString(formData, "dailyTrend"), DailyTrend);
+  const entryZone = parseOptionalEnum(getString(formData, "entryZone"), EntryZone);
+  const entrySignal = parseOptionalEnum(getString(formData, "entrySignal"), EntrySignal);
+  const setupValid = Boolean(dailyTrend) && Boolean(entryZone) && Boolean(entrySignal);
 
   if (!assetId || !userId || !direction) {
     return { status: "error", message: "Asset, trader and direction are required." };
@@ -91,6 +99,11 @@ export async function createTrade(
         riskPercent: decimalFields[3].value,
         thesis,
         invalidation: invalidation || null,
+        strategyCode: strategyCode || null,
+        dailyTrend,
+        entryZone,
+        entrySignal,
+        setupValid,
         openedAt: status === TradeStatus.OPEN ? now : null,
         closedAt: status === TradeStatus.CLOSED ? now : null,
       },
@@ -332,6 +345,11 @@ async function removeScreenshots(urls: string[]) {
 }
 
 function parseEnum<T extends Record<string, string>>(value: string, enumObject: T) {
+  return Object.values(enumObject).includes(value) ? (value as T[keyof T]) : null;
+}
+
+function parseOptionalEnum<T extends Record<string, string>>(value: string, enumObject: T) {
+  if (!value || value === "NONE") return null;
   return Object.values(enumObject).includes(value) ? (value as T[keyof T]) : null;
 }
 

@@ -39,6 +39,27 @@ enum TradeStatus {
   CANCELLED
 }
 
+enum DailyTrend {
+  BULLISH
+  BEARISH
+  RANGE
+}
+
+enum EntryZone {
+  EMA50_PULLBACK
+  SUPPORT_RESISTANCE
+  FIB_RETRACEMENT
+  NONE
+}
+
+enum EntrySignal {
+  ENGULFING
+  PIN_BAR
+  RSI_OVERSOLD
+  RSI_OVERBOUGHT
+  NONE
+}
+
 enum MacroCategory {
   RATES
   INFLATION
@@ -116,6 +137,7 @@ model WatchlistItem {
   asset          Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@unique([watchlistId, assetId])
+  @@index([assetId])
 }
 
 model Trade {
@@ -132,6 +154,11 @@ model Trade {
   invalidation String?
   result       String?
   mistakeTags  String[]       @default([])
+  strategyCode String?
+  dailyTrend   DailyTrend?
+  entryZone    EntryZone?
+  entrySignal  EntrySignal?
+  setupValid   Boolean        @default(false)
   openedAt     DateTime?
   closedAt     DateTime?
   createdAt    DateTime       @default(now())
@@ -154,6 +181,9 @@ model TradeNote {
   createdAt       DateTime @default(now())
   trade           Trade    @relation(fields: [tradeId], references: [id], onDelete: Cascade)
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tradeId])
+  @@index([userId])
 }
 
 model MacroIndicator {
