@@ -108,8 +108,8 @@ export const MACRO_REGION_CONFIGS: MacroRegionConfig[] = [
     countryCode: "CH",
     centralBank: "Swiss National Bank",
     currency: "CHF",
-    dataStatus: "not_connected",
-    sourceLabels: [],
+    dataStatus: "live",
+    sourceLabels: ["SNB", "BFS"],
     indicators: [],
   },
   {
@@ -118,8 +118,8 @@ export const MACRO_REGION_CONFIGS: MacroRegionConfig[] = [
     countryCode: "UK",
     centralBank: "Bank of England",
     currency: "GBP",
-    dataStatus: "not_connected",
-    sourceLabels: [],
+    dataStatus: "live",
+    sourceLabels: ["BoE", "ONS"],
     indicators: [],
   },
   {
@@ -128,8 +128,8 @@ export const MACRO_REGION_CONFIGS: MacroRegionConfig[] = [
     countryCode: "JP",
     centralBank: "Bank of Japan",
     currency: "JPY",
-    dataStatus: "not_connected",
-    sourceLabels: [],
+    dataStatus: "live",
+    sourceLabels: ["BOJ", "e-Stat"],
     indicators: [],
   },
 ];

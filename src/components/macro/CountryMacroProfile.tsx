@@ -379,7 +379,7 @@ function filterByTimeframe(points: MacroTrendPoint[], timeframe: Timeframe) {
 }
 
 function SourceBadge({ source }: { source: MacroSource }) {
-  const live = ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB"].includes(source);
+  const live = ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB", "SNB", "BFS", "ONS", "BoE", "BOJ", "e-Stat"].includes(source);
   return (
     <span className={live ? "text-[#53b873]" : "text-[#777a7c]"}>
       {source}

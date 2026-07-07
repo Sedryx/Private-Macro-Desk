@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "data:fred": "tsx scripts/sync-fred.ts",
     "data:macro": "tsx scripts/sync-macro.ts",
+    "data:macro:global": "tsx scripts/sync-global-macro.ts",
     "data:calendar": "tsx scripts/sync-forex-factory-calendar.ts",
     "data:research": "tsx scripts/sync-sec-research.ts"
   },

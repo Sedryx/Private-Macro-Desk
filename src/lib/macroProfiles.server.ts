@@ -8,6 +8,7 @@ import {
   type MacroDisplayKind,
 } from "@/lib/data/macroRegions";
 import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
+import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
 import {
   countryMacroProfiles,
   type CountryMacroProfile,
@@ -32,6 +33,14 @@ const displayConfigs: SeriesDisplayConfig[] = [
     sourceRef: series.provider === "EUROSTAT"
       ? `Eurostat dataset ${series.dataset}`
       : `ECB series ${series.seriesKey}`,
+  })),
+  ...OFFICIAL_GLOBAL_SERIES.map((series) => ({
+    ...series,
+    sourceRef: "seriesCode" in series
+      ? `${series.provider} series ${series.seriesCode}`
+      : "timeseriesId" in series
+        ? `${series.provider} ${series.datasetId}/${series.timeseriesId}`
+        : `${series.provider} unresolved official metadata`,
   })),
 ];
 const configByCode = new Map(displayConfigs.map((series) => [series.code, series]));
@@ -305,6 +314,12 @@ function formatDate(date: Date) {
 
 function normalizeSource(source: string | null, releaseType: string | null): MacroSource {
   if (source === "ECB") return "ECB";
+  if (source === "SNB") return "SNB";
+  if (source === "BFS") return "BFS";
+  if (source === "ONS") return "ONS";
+  if (source === "BoE") return "BoE";
+  if (source === "BOJ") return "BOJ";
+  if (source === "e-Stat") return "e-Stat";
   if (source === "Eurostat") {
     return releaseType === "flash" ? "Eurostat flash" : "Eurostat";
   }
@@ -315,7 +330,9 @@ function normalizeSource(source: string | null, releaseType: string | null): Mac
 function isLiveSource(source: MacroSource) {
   return source === "ECB" || source === "Eurostat" ||
     source === "Eurostat flash" || source === "FRED fallback" ||
-    source === "FRED" || source === "FRED / calculated";
+    source === "FRED" || source === "FRED / calculated" ||
+    source === "SNB" || source === "BFS" || source === "ONS" ||
+    source === "BoE" || source === "BOJ" || source === "e-Stat";
 }
 
 function isStale(date: Date, maxAgeDays?: number) {

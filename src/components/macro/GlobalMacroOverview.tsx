@@ -41,7 +41,7 @@ function SourceBadge({ profile }: { profile: CountryMacroProfile }) {
     section.indicators.map((indicator) => indicator.source),
   );
   const hasLiveData = sources.some((source) =>
-    ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB"].includes(source),
+    ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB", "SNB", "BFS", "ONS", "BoE", "BOJ", "e-Stat"].includes(source),
   );
   const label =
     hasLiveData
