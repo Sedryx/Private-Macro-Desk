@@ -45,7 +45,8 @@ function globalSourceRef(series: (typeof OFFICIAL_GLOBAL_SERIES)[number]) {
   if ("cubeId" in series) return `${series.provider} cube ${series.cubeId}`;
   if ("seriesId" in series) return `${series.provider} series ${series.seriesId}`;
   if ("seriesPath" in series) return `${series.provider} ${series.seriesPath}`;
-  return `${series.provider} ${series.seriesKey}`;
+  if ("seriesKey" in series) return `${series.provider} ${series.seriesKey}`;
+  return `${series.provider} ${series.leftCode}-${series.rightCode}`;
 }
 const configByCode = new Map(displayConfigs.map((series) => [series.code, series]));
 const regionByCode = new Map(
@@ -141,7 +142,7 @@ function hydrateMetric(
     metric.sourceUpdatedDate = providerUpdatedAt ? formatDate(providerUpdatedAt) : undefined;
     metric.releaseType = releaseType ?? undefined;
     metric.stale = stale;
-    metric.context = `${config.name} Ã‚Â· ${config.sourceRef}`;
+    metric.context = `${config.name} Ãƒâ€šÃ‚Â· ${config.sourceRef}`;
   }
 
   if (config.ui.snapshotLabel) {
@@ -235,10 +236,10 @@ function markConnectedRegions(profiles: CountryMacroProfile[]) {
 }
 
 function coreMetricIds(countryCode: string) {
-  if (countryCode === "EU") return ["eu-deposit", "eu-hicp", "eu-unemployment", "eu-eurusd"];
-  if (countryCode === "CH") return ["ch-policy", "ch-cpi", "ch-unemployment", "ch-usd"];
+  if (countryCode === "EU") return ["eu-deposit", "eu-hicp", "eu-unemployment", "eu-eurusd", "eu-de-10y"];
+  if (countryCode === "CH") return ["ch-policy", "ch-cpi", "ch-unemployment", "ch-gdp", "ch-10y", "ch-usd"];
   if (countryCode === "UK") return ["uk-policy", "uk-cpi", "uk-unemployment", "uk-fx"];
-  if (countryCode === "JP") return ["jp-policy", "jp-cpi", "jp-unemployment", "jp-fx"];
+  if (countryCode === "JP") return ["jp-policy", "jp-cpi", "jp-unemployment", "jp-gdp", "jp-10y", "jp-fx"];
   return [];
 }
 
@@ -349,6 +350,7 @@ function normalizeSource(source: string | null, releaseType: string | null): Mac
   if (source === "DBnomics") return "DBnomics";
   if (source === "FRED/OECD") return "FRED/OECD";
   if (source === "FRED / Japan Cabinet Office") return "FRED / Japan Cabinet Office";
+  if (source === "Calculated") return "Calculated";
   if (source === "e-Stat") return "e-Stat";
   if (source === "Eurostat") {
     return releaseType === "flash" ? "Eurostat flash" : "Eurostat";
@@ -363,7 +365,7 @@ function isLiveSource(source: MacroSource) {
     source === "FRED" || source === "FRED / calculated" ||
     source === "SNB" || source === "BFS" || source === "ONS" ||
     source === "BoE" || source === "BOJ" || source === "DBnomics" ||
-    source === "FRED/OECD" || source === "FRED / Japan Cabinet Office" || source === "e-Stat";
+    source === "FRED/OECD" || source === "FRED / Japan Cabinet Office" || source === "Calculated" || source === "e-Stat";
 }
 
 function isStale(date: Date, maxAgeDays?: number) {

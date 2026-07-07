@@ -146,6 +146,42 @@ export async function updateTradeStatus(
   }
 }
 
+export async function deleteTrade(
+  _previousState: JournalActionState,
+  formData: FormData,
+): Promise<JournalActionState> {
+  const tradeId = getString(formData, "tradeId");
+
+  if (!tradeId) {
+    return { status: "error", message: "Trade is required." };
+  }
+
+  try {
+    const trade = await prisma.trade.findUnique({
+      where: { id: tradeId },
+      select: {
+        id: true,
+        notes: { select: { screenshotUrls: true } },
+      },
+    });
+
+    if (!trade) {
+      return { status: "error", message: "Trade not found." };
+    }
+
+    const screenshotUrls = trade.notes.flatMap((note) => note.screenshotUrls);
+
+    await prisma.trade.delete({ where: { id: trade.id } });
+    await removeScreenshots(screenshotUrls);
+
+    revalidatePath("/journal");
+    revalidatePath("/dashboard");
+    return { status: "success", message: "Trade deleted." };
+  } catch (error) {
+    console.error("Unable to delete trade", error);
+    return { status: "error", message: "The trade could not be deleted." };
+  }
+}
 export async function addTradeNote(
   _previousState: JournalActionState,
   formData: FormData,

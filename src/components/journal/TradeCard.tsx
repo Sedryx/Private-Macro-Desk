@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Image from "next/image";
 
 import {
+  deleteTrade,
   updateTradeStatus,
   type JournalActionState,
 } from "@/app/journal/actions";
@@ -30,8 +31,11 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Zurich",
 });
 
-export function TradeCard({ trade, users }: { trade: TradeView; users: JournalUser[] }) {
+export function TradeCard({ trade, users, initialCollapsed = false }: { trade: TradeView; users: JournalUser[]; initialCollapsed?: boolean }) {
   const [statusState, statusAction, isStatusPending] = useActionState(updateTradeStatus, initialState);
+  const [deleteState, deleteAction, isDeletePending] = useActionState(deleteTrade, initialState);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <article className="desk-surface overflow-hidden">
@@ -44,11 +48,19 @@ export function TradeCard({ trade, users }: { trade: TradeView; users: JournalUs
           </div>
           <p className="mt-1 text-[12px] text-[#7b8580]">{trade.asset.name}</p>
           <p className="mt-2 text-[11px] text-[#626d68]">
-            Added by {trade.user.name} · {formatDate(trade.createdAt)}
+            Added by {trade.user.name} Ã‚Â· {formatDate(trade.createdAt)}
           </p>
         </div>
 
         <form action={statusAction} className="flex flex-wrap items-end gap-2 lg:justify-end">
+          <button
+            type="button"
+            onClick={() => setCollapsed((current) => !current)}
+            className="rounded-lg border border-[var(--line)] bg-[#0c1013] px-3 py-2 text-[10px] font-semibold text-[#9aa39f] transition hover:border-[#3a4540] hover:text-[#e2e7e4]"
+            aria-expanded={!collapsed}
+          >
+            {collapsed ? "Expand" : "Collapse"}
+          </button>
           <input type="hidden" name="tradeId" value={trade.id} />
           <label>
             <span className="mb-1.5 block text-[10px] font-medium text-[#77817d]">Trade status</span>
@@ -66,8 +78,52 @@ export function TradeCard({ trade, users }: { trade: TradeView; users: JournalUs
             {statusState.message}
           </span>
         </form>
-      </div>
 
+        <form action={deleteAction} className="flex flex-col items-end gap-1">
+          <input type="hidden" name="tradeId" value={trade.id} />
+          {confirmDelete ? (
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={isDeletePending}
+                className="rounded-lg border border-[var(--line)] bg-[#0c1013] px-3 py-2 text-[10px] font-semibold text-[#9aa39f] transition hover:border-[#3a4540] hover:text-[#e2e7e4] disabled:cursor-wait disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isDeletePending}
+                className="rounded-lg border border-[#743131] bg-[#271010] px-3 py-2 text-[10px] font-semibold text-[#ff9b9b] transition hover:border-[#9b3c3c] disabled:cursor-wait disabled:opacity-60"
+              >
+                {isDeletePending ? "Deleting..." : "Confirm delete"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={isDeletePending}
+              className="rounded-lg border border-[#4a2424] bg-[#1a0f0f] px-3 py-2 text-[10px] font-semibold text-[#e77878] transition hover:border-[#743131] hover:text-[#ff9b9b] disabled:cursor-wait disabled:opacity-60"
+            >
+              Delete
+            </button>
+          )}
+          <span aria-live="polite" className={`max-w-52 text-right text-[10px] ${deleteState.status === "error" ? "text-[var(--danger)]" : "text-[#9bab91]"}`}>
+            {confirmDelete && deleteState.status === "idle" ? "This removes notes and screenshots too." : deleteState.message}
+          </span>
+        </form>      </div>
+
+      {collapsed ? (
+        <div className="grid gap-3 border-t border-[var(--line)] bg-[#0f1418] px-5 py-4 text-[11px] sm:grid-cols-[1.2fr_repeat(4,0.7fr)] sm:px-6">
+          <CompactCell label="Thesis" value={truncate(trade.thesis, 120)} />
+          <CompactCell label="Entry" value={trade.entryPrice ?? "Not set"} />
+          <CompactCell label="Risk" value={trade.riskPercent ? `${trade.riskPercent}%` : "Not set"} />
+          <CompactCell label="Notes" value={`${trade.notes.length}`} />
+          <CompactCell label="Created" value={formatDate(trade.createdAt)} />
+        </div>
+      ) : (
+        <>
       <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="Entry" value={trade.entryPrice} />
         <Metric label="Stop loss" value={trade.stopLoss} />
@@ -158,10 +214,24 @@ export function TradeCard({ trade, users }: { trade: TradeView; users: JournalUs
 
         <TradeNoteForm tradeId={trade.id} users={users} defaultUserId={trade.userId} requestId={trade.noteRequestId} />
       </div>
+        </>
+      )}
     </article>
   );
 }
 
+function CompactCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-[#5f6965]">{label}</p>
+      <p className="mt-1 truncate text-[12px] font-medium text-[#aeb7b2]">{value}</p>
+    </div>
+  );
+}
+
+function truncate(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength).trim()}...` : value;
+}
 function Badge({ children, className }: { children: React.ReactNode; className: string }) {
   return <span className={`rounded-full border px-2.5 py-1 text-[9px] font-semibold tracking-[0.08em] ${className}`}>{children}</span>;
 }

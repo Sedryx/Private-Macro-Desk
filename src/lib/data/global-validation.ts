@@ -1,4 +1,4 @@
-﻿import type { OfficialGlobalSeriesConfig } from "@/lib/data/global-series";
+import type { OfficialGlobalSeriesConfig } from "@/lib/data/global-series";
 import type { MacroObservation } from "@/lib/data/macroStore";
 
 const RANGES: Record<OfficialGlobalSeriesConfig["valueKind"], { min: number; max: number }> = {
@@ -9,6 +9,7 @@ const RANGES: Record<OfficialGlobalSeriesConfig["valueKind"], { min: number; max
   gdp_qoq: { min: -40, max: 40 },
   fx: { min: 0, max: Number.POSITIVE_INFINITY },
   index: { min: 0, max: Number.POSITIVE_INFINITY },
+  spread: { min: -10, max: 30 },
 };
 
 export function prepareGlobalObservations(

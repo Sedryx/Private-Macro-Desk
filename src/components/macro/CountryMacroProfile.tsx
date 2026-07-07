@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 
@@ -21,7 +21,7 @@ export function CountryMacroProfileView({
   profile: CountryMacroProfile;
   profiles: CountryMacroProfile[];
 }) {
-  const initialMetric = profile.sections.centralBank.indicators[0];
+  const initialMetric = firstConnectedMetric(profile) ?? profile.sections.centralBank.indicators[0];
   const [activeSection, setActiveSection] = useState<MacroSectionKey>("centralBank");
   const [activeMetricId, setActiveMetricId] = useState(initialMetric?.id ?? "");
   const [search, setSearch] = useState("");
@@ -33,7 +33,7 @@ export function CountryMacroProfileView({
   const allIndicators = useMemo(
     () =>
       macroSectionOrder.flatMap((sectionKey) =>
-        profile.sections[sectionKey].indicators.map((metric) => ({
+        profile.sections[sectionKey].indicators.filter(isSelectableMetric).map((metric) => ({
           metric,
           sectionKey,
         })),
@@ -74,7 +74,7 @@ export function CountryMacroProfileView({
   function selectSection(key: MacroSectionKey) {
     setActiveSection(key);
     setSearch("");
-    setActiveMetricId(profile.sections[key].indicators[0]?.id ?? "");
+    setActiveMetricId(profile.sections[key].indicators.find(isSelectableMetric)?.id ?? "");
   }
 
   function selectMetric(metricId: string, sectionKey: MacroSectionKey) {
@@ -334,6 +334,14 @@ export function CountryMacroProfileView({
   );
 }
 
+function isSelectableMetric(metric: { history: MacroTrendPoint[]; source: MacroSource }) {
+  return metric.history.length > 0 && metric.source !== "Demo" && metric.source !== "Coming soon" && metric.source !== "Not connected";
+}
+
+function firstConnectedMetric(profile: CountryMacroProfile) {
+  return macroSectionOrder.flatMap((sectionKey) => profile.sections[sectionKey].indicators).find(isSelectableMetric);
+}
+
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5 text-[#85878a]">
@@ -379,7 +387,7 @@ function filterByTimeframe(points: MacroTrendPoint[], timeframe: Timeframe) {
 }
 
 function SourceBadge({ source }: { source: MacroSource }) {
-  const live = ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB", "SNB", "BFS", "ONS", "BoE", "BOJ", "DBnomics", "FRED/OECD", "FRED / Japan Cabinet Office", "e-Stat"].includes(source);
+  const live = ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB", "SNB", "BFS", "ONS", "BoE", "BOJ", "DBnomics", "FRED/OECD", "FRED / Japan Cabinet Office", "Calculated", "e-Stat"].includes(source);
   return (
     <span className={live ? "text-[#53b873]" : "text-[#777a7c]"}>
       {source}

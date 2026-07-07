@@ -10,7 +10,8 @@ export type GlobalProvider =
   | "DBnomics"
   | "FRED/OECD"
   | "FRED / Japan Cabinet Office"
-  | "ECB";
+  | "ECB"
+  | "Calculated";
 
 export type GlobalCountry = "CH" | "UK" | "JP" | "EU";
 export type GlobalFrequency = "daily" | "monthly" | "quarterly";
@@ -21,7 +22,8 @@ export type GlobalValueKind =
   | "unemployment"
   | "gdp_qoq"
   | "fx"
-  | "index";
+  | "index"
+  | "spread";
 export type GlobalTransform = "DIRECT" | "QOQ_PERCENT";
 
 type BaseGlobalSeries = {
@@ -87,6 +89,13 @@ export type EcbGlobalSeriesConfig = BaseGlobalSeries & {
   lastNObservations?: number;
 };
 
+export type DerivedGlobalSeriesConfig = BaseGlobalSeries & {
+  provider: "Calculated";
+  formula: "SUBTRACT";
+  leftCode: string;
+  rightCode: string;
+};
+
 export type OfficialGlobalSeriesConfig =
   | SnbSeriesConfig
   | BoeSeriesConfig
@@ -95,7 +104,8 @@ export type OfficialGlobalSeriesConfig =
   | BojApiSeriesConfig
   | DbnomicsSeriesConfig
   | FredGlobalSeriesConfig
-  | EcbGlobalSeriesConfig;
+  | EcbGlobalSeriesConfig
+  | DerivedGlobalSeriesConfig;
 
 const ui = (
   section: MacroUiBinding["section"],
@@ -149,6 +159,21 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     ui: ui("inflation", "ch-cpi", "percent", "pp", "CPI YoY", "inflation", 1),
   },
   {
+    provider: "SNB",
+    code: "CH_CORE_CPI",
+    name: "Switzerland Core CPI YoY",
+    category: MacroCategory.INFLATION,
+    country: "CH",
+    unit: "%",
+    cubeId: "plkoprinfla",
+    dimensions: { D0: "KGM" },
+    sourceUrl: "https://data.snb.ch/api/cube/plkoprinfla/data/csv/en?dimSel=D0(KGM)",
+    maxAgeDays: 100,
+    frequency: "monthly",
+    valueKind: "inflation",
+    transform: "DIRECT",
+    ui: ui("inflation", "ch-core", "percent", "pp", "Core CPI", undefined, 1),
+  },  {
     provider: "SNB",
     code: "CH_UNEMPLOYMENT",
     name: "Switzerland Registered Unemployment Rate (SECO)",
@@ -420,7 +445,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
   },
   {
     provider: "FRED/OECD",
-    code: "EU_BUND_10Y",
+    code: "EU_DE_10Y",
     name: "Germany 10Y Bund Yield",
     category: MacroCategory.RATES,
     country: "EU",
@@ -431,6 +456,69 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "monthly",
     valueKind: "yield",
     transform: "DIRECT",
-    ui: ui("ratesMarkets", "eu-bund-10y", "percent", "bp", "Bund 10Y", undefined, 2),
+    ui: ui("ratesMarkets", "eu-de-10y", "percent", "bp", "Germany 10Y", undefined, 2),
   },
-];
+  {
+    provider: "FRED/OECD",
+    code: "EU_FR_10Y",
+    name: "France 10Y Government Bond Yield",
+    category: MacroCategory.RATES,
+    country: "EU",
+    unit: "%",
+    seriesId: "IRLTLT01FRM156N",
+    sourceUrl: "https://fred.stlouisfed.org/series/IRLTLT01FRM156N",
+    maxAgeDays: 100,
+    frequency: "monthly",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "eu-fr-10y", "percent", "bp", "France 10Y", undefined, 2),
+  },
+  {
+    provider: "FRED/OECD",
+    code: "EU_IT_10Y",
+    name: "Italy 10Y Government Bond Yield",
+    category: MacroCategory.RATES,
+    country: "EU",
+    unit: "%",
+    seriesId: "IRLTLT01ITM156N",
+    sourceUrl: "https://fred.stlouisfed.org/series/IRLTLT01ITM156N",
+    maxAgeDays: 100,
+    frequency: "monthly",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "eu-it-10y", "percent", "bp", "Italy 10Y", undefined, 2),
+  },
+  {
+    provider: "Calculated",
+    code: "EU_FR_DE_10Y_SPREAD",
+    name: "France-Germany 10Y Spread",
+    category: MacroCategory.RATES,
+    country: "EU",
+    unit: "pp",
+    formula: "SUBTRACT",
+    leftCode: "EU_FR_10Y",
+    rightCode: "EU_DE_10Y",
+    sourceUrl: "Calculated from FRED/OECD IRLTLT01FRM156N minus IRLTLT01DEM156N",
+    maxAgeDays: 100,
+    frequency: "monthly",
+    valueKind: "spread",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "eu-fr-de-spread", "percent", "bp", "FR-DE spread", undefined, 2),
+  },
+  {
+    provider: "Calculated",
+    code: "EU_IT_DE_10Y_SPREAD",
+    name: "Italy-Germany 10Y Spread",
+    category: MacroCategory.RATES,
+    country: "EU",
+    unit: "pp",
+    formula: "SUBTRACT",
+    leftCode: "EU_IT_10Y",
+    rightCode: "EU_DE_10Y",
+    sourceUrl: "Calculated from FRED/OECD IRLTLT01ITM156N minus IRLTLT01DEM156N",
+    maxAgeDays: 100,
+    frequency: "monthly",
+    valueKind: "spread",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "eu-it-de-spread", "percent", "bp", "IT-DE spread", undefined, 2),
+  },];

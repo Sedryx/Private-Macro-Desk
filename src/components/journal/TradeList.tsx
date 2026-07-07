@@ -1,3 +1,6 @@
+﻿"use client";
+
+import { useMemo, useState } from "react";
 import type { TradeDirection, TradeStatus } from "@prisma/client";
 
 import { TradeCard } from "@/components/journal/TradeCard";
@@ -32,7 +35,34 @@ export type TradeView = {
   }>;
 };
 
+type StatusFilter = "ALL" | TradeStatus;
+type SortMode = "NEWEST" | "OLDEST" | "STATUS" | "RISK";
+
+type CollapseMode = "AUTO" | "ALL_COLLAPSED" | "ALL_EXPANDED";
+
+const statusOrder: Record<TradeStatus, number> = {
+  OPEN: 0,
+  PLANNED: 1,
+  CLOSED: 2,
+  CANCELLED: 3,
+};
+
 export function TradeList({ trades, users }: { trades: TradeView[]; users: JournalUser[] }) {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [sortMode, setSortMode] = useState<SortMode>("NEWEST");
+  const [collapseMode, setCollapseMode] = useState<CollapseMode>("AUTO");
+
+  const visibleTrades = useMemo(() => {
+    return trades
+      .filter((trade) => statusFilter === "ALL" || trade.status === statusFilter)
+      .toSorted((left, right) => {
+        if (sortMode === "OLDEST") return new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+        if (sortMode === "STATUS") return statusOrder[left.status] - statusOrder[right.status];
+        if (sortMode === "RISK") return Number(right.riskPercent ?? 0) - Number(left.riskPercent ?? 0);
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+      });
+  }, [sortMode, statusFilter, trades]);
+
   if (trades.length === 0) {
     return (
       <div className="desk-surface px-6 py-14 text-center">
@@ -47,9 +77,74 @@ export function TradeList({ trades, users }: { trades: TradeView[]; users: Journ
 
   return (
     <div className="space-y-4">
-      {trades.map((trade) => (
-        <TradeCard key={trade.id} trade={trade} users={users} />
-      ))}
+      <div className="desk-surface flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <ControlSelect label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as StatusFilter)}>
+            <option value="ALL">All status</option>
+            <option value="OPEN">Open</option>
+            <option value="PLANNED">Planned</option>
+            <option value="CLOSED">Closed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </ControlSelect>
+          <ControlSelect label="Sort" value={sortMode} onChange={(value) => setSortMode(value as SortMode)}>
+            <option value="NEWEST">Newest first</option>
+            <option value="STATUS">Open / planned first</option>
+            <option value="RISK">Highest risk first</option>
+            <option value="OLDEST">Oldest first</option>
+          </ControlSelect>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] text-[#69746f]">{visibleTrades.length} / {trades.length} trades</span>
+          <button type="button" onClick={() => setCollapseMode("AUTO")} className={toggleClass(collapseMode === "AUTO")}>Auto</button>
+          <button type="button" onClick={() => setCollapseMode("ALL_COLLAPSED")} className={toggleClass(collapseMode === "ALL_COLLAPSED")}>Collapse all</button>
+          <button type="button" onClick={() => setCollapseMode("ALL_EXPANDED")} className={toggleClass(collapseMode === "ALL_EXPANDED")}>Expand all</button>
+        </div>
+      </div>
+
+      {visibleTrades.length === 0 ? (
+        <div className="desk-surface px-6 py-10 text-center text-[13px] text-[#7d8883]">
+          No trades match this filter.
+        </div>
+      ) : (
+        visibleTrades.map((trade) => (
+          <TradeCard
+            key={`${trade.id}-${collapseMode}`}
+            trade={trade}
+            users={users}
+            initialCollapsed={collapseMode === "ALL_COLLAPSED" || (collapseMode === "AUTO" && ["CLOSED", "CANCELLED"].includes(trade.status))}
+          />
+        ))
+      )}
     </div>
   );
+}
+
+function ControlSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[#0c1013] px-2.5 py-2">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#65706b]">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="bg-transparent text-[11px] font-semibold text-[#d9dfdb] outline-none">
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function toggleClass(active: boolean) {
+  return `rounded-lg border px-3 py-2 text-[10px] font-semibold transition ${
+    active
+      ? "border-[#5e6d62] bg-[#18231b] text-[#bfe8c4]"
+      : "border-[var(--line)] bg-[#0c1013] text-[#87918c] hover:border-[#3a4540] hover:text-[#d6ddd9]"
+  }`;
 }

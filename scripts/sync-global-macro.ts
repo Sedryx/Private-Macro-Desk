@@ -5,7 +5,7 @@ import { syncBojSeries } from "../src/lib/data/boj";
 import { syncDbnomicsSeries } from "../src/lib/data/dbnomics";
 import { fetchEcbSeries } from "../src/lib/data/ecb";
 import { fetchFredObservations, parseFredObservations } from "../src/lib/data/fred";
-import { OFFICIAL_GLOBAL_SERIES, type EcbGlobalSeriesConfig, type FredGlobalSeriesConfig, type OfficialGlobalSeriesConfig } from "../src/lib/data/global-series";
+import { OFFICIAL_GLOBAL_SERIES, type DerivedGlobalSeriesConfig, type EcbGlobalSeriesConfig, type FredGlobalSeriesConfig, type OfficialGlobalSeriesConfig } from "../src/lib/data/global-series";
 import { prepareGlobalObservations } from "../src/lib/data/global-validation";
 import { replaceMacroSeries } from "../src/lib/data/macroStore";
 import { syncOnsSeries } from "../src/lib/data/ons";
@@ -43,6 +43,44 @@ async function syncEcbGlobalSeries(config: EcbGlobalSeriesConfig): Promise<SyncR
     observations,
   });
 }
+async function syncDerivedSeries(config: DerivedGlobalSeriesConfig): Promise<SyncResult> {
+  const { prisma } = await import("../src/lib/prisma");
+  const [left, right] = await Promise.all([
+    prisma.macroIndicator.findUnique({
+      where: { code: config.leftCode },
+      include: { values: { orderBy: { date: "asc" } } },
+    }),
+    prisma.macroIndicator.findUnique({
+      where: { code: config.rightCode },
+      include: { values: { orderBy: { date: "asc" } } },
+    }),
+  ]);
+
+  if (!left?.values.length || !right?.values.length) {
+    throw new Error(`Missing source series for ${config.code}: ${config.leftCode} or ${config.rightCode}.`);
+  }
+
+  const rightByMonth = new Map(
+    right.values.map((value) => [value.date.toISOString().slice(0, 7), value.value.toNumber()]),
+  );
+  const raw = left.values.flatMap((leftValue) => {
+    const rightValue = rightByMonth.get(leftValue.date.toISOString().slice(0, 7));
+    if (rightValue === undefined) return [];
+    return [{ date: leftValue.date, value: leftValue.value.toNumber() - rightValue }];
+  });
+  const observations = prepareGlobalObservations(config, raw);
+
+  return replaceMacroSeries({
+    code: config.code,
+    name: config.name,
+    category: config.category,
+    country: config.country,
+    unit: config.unit,
+    source: "Calculated",
+    providerUpdatedAt: null,
+    observations,
+  });
+}
 async function syncSeries(config: OfficialGlobalSeriesConfig): Promise<SyncResult> {
   if (config.provider === "BoE") return syncBoeSeries(config);
   if (config.provider === "ONS") return syncOnsSeries(config);
@@ -50,6 +88,7 @@ async function syncSeries(config: OfficialGlobalSeriesConfig): Promise<SyncResul
   if (config.provider === "BOJ") return syncBojSeries(config);
   if (config.provider === "DBnomics") return syncDbnomicsSeries(config);
   if (config.provider === "ECB") return syncEcbGlobalSeries(config);
+  if (config.provider === "Calculated") return syncDerivedSeries(config);
   return syncFredGlobalSeries(config);
 }
 

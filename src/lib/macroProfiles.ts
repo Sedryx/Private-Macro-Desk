@@ -1,4 +1,4 @@
-﻿export type MacroSectionKey =
+export type MacroSectionKey =
   | "centralBank"
   | "inflation"
   | "labour"
@@ -22,6 +22,7 @@ export type MacroSource =
   | "DBnomics"
   | "FRED/OECD"
   | "FRED / Japan Cabinet Office"
+  | "Calculated"
   | "e-Stat"
   | "Not connected"
   | "Data unavailable"
@@ -290,10 +291,14 @@ function prepareEuroAreaProfile(profile: CountryMacroProfile) {
     ratesMarkets: section(
       "Euro Area rates & markets",
       "Rates & Markets",
-      "EUR/USD and the German Bund 10Y are connected from official/market data sources when synced.",
+      "EUR/USD, national 10Y sovereign yields and France/Germany and Italy/Germany spreads.",
       [
         notConnectedMetric("eu-eurusd", "EUR/USD"),
-        notConnectedMetric("eu-bund-10y", "Germany 10Y Bund Yield"),
+        notConnectedMetric("eu-de-10y", "Germany 10Y Bund Yield"),
+        notConnectedMetric("eu-fr-10y", "France 10Y Government Bond Yield"),
+        notConnectedMetric("eu-it-10y", "Italy 10Y Government Bond Yield"),
+        notConnectedMetric("eu-fr-de-spread", "France-Germany 10Y Spread"),
+        notConnectedMetric("eu-it-de-spread", "Italy-Germany 10Y Spread"),
       ],
     ),
   };
