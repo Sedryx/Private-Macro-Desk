@@ -3,9 +3,8 @@
 import { AssetType, Bias } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
-
-const OWNER_EMAIL = "joachim@private-macro-desk.local";
 
 export type WatchlistActionState = {
   status: "idle" | "success" | "error";
@@ -14,16 +13,28 @@ export type WatchlistActionState = {
 
 export type UpdateWatchlistItemState = WatchlistActionState;
 
+async function requireSession(): Promise<WatchlistActionState | null> {
+  try {
+    await requireUser();
+    return null;
+  } catch {
+    return error("Your session has expired. Please log in again.");
+  }
+}
+
 export async function createWatchlist(
   _previousState: WatchlistActionState,
   formData: FormData,
 ): Promise<WatchlistActionState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const name = getString(formData, "name").trim();
   if (!name) return error("Watchlist name is required.");
   if (name.length > 80) return error("Watchlist name is limited to 80 characters.");
 
   try {
-    const owner = await prisma.user.findUnique({ where: { email: OWNER_EMAIL } });
+    const owner = await prisma.user.findFirst({ where: { role: "OWNER" } });
     if (!owner) return error("OWNER user not found. Run the database seed.");
 
     const duplicate = await prisma.watchlist.findFirst({
@@ -44,6 +55,9 @@ export async function renameWatchlist(
   _previousState: WatchlistActionState,
   formData: FormData,
 ): Promise<WatchlistActionState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const watchlistId = getString(formData, "watchlistId");
   const name = getString(formData, "name").trim();
   if (!watchlistId || !name) return error("Watchlist and name are required.");
@@ -75,6 +89,9 @@ export async function deleteWatchlist(
   _previousState: WatchlistActionState,
   formData: FormData,
 ): Promise<WatchlistActionState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const watchlistId = getString(formData, "watchlistId");
   if (!watchlistId) return error("Watchlist is required.");
 
@@ -99,6 +116,9 @@ export async function addAssetToWatchlist(
   _previousState: WatchlistActionState,
   formData: FormData,
 ): Promise<WatchlistActionState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const watchlistId = getString(formData, "watchlistId");
   const assetId = getString(formData, "assetId");
   if (!watchlistId || !assetId) return error("Select an asset first.");
@@ -131,6 +151,9 @@ export async function createCustomAssetAndAddToWatchlist(
   _previousState: WatchlistActionState,
   formData: FormData,
 ): Promise<WatchlistActionState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const watchlistId = getString(formData, "watchlistId");
   const symbol = normalizeSymbol(getString(formData, "symbol"));
   const name = getString(formData, "name").trim();
@@ -205,6 +228,9 @@ export async function removeAssetFromWatchlist(
   _previousState: WatchlistActionState,
   formData: FormData,
 ): Promise<WatchlistActionState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const itemId = getString(formData, "itemId");
   if (!itemId) return error("Missing watchlist item.");
 
@@ -224,6 +250,9 @@ export async function updateWatchlistItem(
   _previousState: UpdateWatchlistItemState,
   formData: FormData,
 ): Promise<UpdateWatchlistItemState> {
+  const sessionError = await requireSession();
+  if (sessionError) return sessionError;
+
   const itemId = getString(formData, "itemId");
   const rawBias = getString(formData, "bias");
   const importantLevel = getString(formData, "importantLevel").trim();
@@ -258,14 +287,14 @@ export async function updateWatchlistItem(
 
 async function findOwnedWatchlist(id: string) {
   return prisma.watchlist.findFirst({
-    where: { id, user: { email: OWNER_EMAIL } },
+    where: { id, user: { role: "OWNER" } },
     select: { id: true, userId: true },
   });
 }
 
 async function findOwnedItem(id: string) {
   return prisma.watchlistItem.findFirst({
-    where: { id, watchlist: { user: { email: OWNER_EMAIL } } },
+    where: { id, watchlist: { user: { role: "OWNER" } } },
     select: { id: true },
   });
 }

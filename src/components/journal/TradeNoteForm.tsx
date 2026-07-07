@@ -7,7 +7,6 @@ import {
   addTradeNote,
   type JournalActionState,
 } from "@/app/journal/actions";
-import type { JournalUser } from "@/components/journal/TradeList";
 
 const initialState: JournalActionState = { status: "idle", message: "" };
 const acceptedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -20,13 +19,9 @@ type ScreenshotPreview = {
 
 export function TradeNoteForm({
   tradeId,
-  users,
-  defaultUserId,
   requestId,
 }: {
   tradeId: string;
-  users: JournalUser[];
-  defaultUserId: string;
   requestId: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -46,10 +41,6 @@ export function TradeNoteForm({
       previews.forEach((preview) => URL.revokeObjectURL(preview.url));
     };
   }, [previews]);
-
-  if (users.length === 0) {
-    return <p className="mt-4 text-[11px] text-[var(--danger)]">No trader is available to author a note.</p>;
-  }
 
   function handleScreenshots(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -84,15 +75,7 @@ export function TradeNoteForm({
     <form ref={formRef} action={formAction} onReset={clearScreenshots} className="mt-4 border-t border-[var(--line)] pt-4">
       <input type="hidden" name="tradeId" value={tradeId} />
       <input type="hidden" name="requestId" value={requestId} />
-      <div className="grid gap-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:items-start">
-        <label>
-          <span className="mb-1.5 block text-[10px] font-medium text-[#77817d]">Author</span>
-          <select name="userId" defaultValue={defaultUserId} required className="desk-field px-3 py-2.5 text-[11px]">
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>{user.name}</option>
-            ))}
-          </select>
-        </label>
+      <div className="grid gap-3">
         <label>
           <span className="mb-1.5 block text-[10px] font-medium text-[#77817d]">New note <span className="text-[#5f6965]">(optional with screenshots)</span></span>
           <textarea name="content" rows={3} maxLength={2_000} placeholder="Add an observation, or leave empty for a screenshot-only note..." className="desk-field min-h-[78px] resize-y px-3 py-2.5 text-[11px] leading-5" />

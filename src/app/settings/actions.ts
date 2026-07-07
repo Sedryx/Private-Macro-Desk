@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateWorkspaceSettings } from "@/lib/settings";
 
@@ -80,12 +81,21 @@ export async function updateUserName(
   _previousState: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
-  const userId = getString(formData, "userId");
-  const name = getString(formData, "name").trim();
   const isFr = getString(formData, "language") === "fr";
 
-  if (!userId || !name) {
-    return { status: "error", message: isFr ? "Utilisateur et nom obligatoires." : "User and name are required." };
+  let sessionUser;
+  try {
+    sessionUser = await requireUser();
+  } catch {
+    return { status: "error", message: isFr ? "Session expiree. Reconnecte-toi." : "Your session has expired. Please log in again." };
+  }
+
+  const requestedUserId = getString(formData, "userId");
+  const name = getString(formData, "name").trim();
+  const targetUserId = sessionUser.role === "OWNER" && requestedUserId ? requestedUserId : sessionUser.id;
+
+  if (!name) {
+    return { status: "error", message: isFr ? "Le nom est obligatoire." : "Name is required." };
   }
 
   if (name.length > 80) {
@@ -93,7 +103,7 @@ export async function updateUserName(
   }
 
   try {
-    await prisma.user.update({ where: { id: userId }, data: { name } });
+    await prisma.user.update({ where: { id: targetUserId }, data: { name } });
     revalidatePath("/settings");
     revalidatePath("/journal");
     revalidatePath("/dashboard");

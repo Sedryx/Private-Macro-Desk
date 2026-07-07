@@ -23,7 +23,6 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const OWNER_EMAIL = "joachim@private-macro-desk.local";
 
 const macroSnapshotDefinitions = [
   { code: "FEDFUNDS", label: "Fed funds" },
@@ -48,7 +47,7 @@ async function getDashboardData() {
     const [watchlists, tradeStatusRows, recentTrades, recentNotes, openTrades, economicEvents, macroIndicators] = await Promise.all([
       prisma.watchlist.findMany({
         where: {
-          user: { email: OWNER_EMAIL },
+          user: { role: "OWNER" },
         },
         select: {
           name: true,

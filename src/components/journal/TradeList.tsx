@@ -52,7 +52,7 @@ const statusOrder: Record<TradeStatus, number> = {
   CANCELLED: 3,
 };
 
-export function TradeList({ trades, users }: { trades: TradeView[]; users: JournalUser[] }) {
+export function TradeList({ trades }: { trades: TradeView[] }) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [sortMode, setSortMode] = useState<SortMode>("NEWEST");
   const [collapseMode, setCollapseMode] = useState<CollapseMode>("AUTO");
@@ -116,7 +116,6 @@ export function TradeList({ trades, users }: { trades: TradeView[]; users: Journ
           <TradeCard
             key={`${trade.id}-${collapseMode}`}
             trade={trade}
-            users={users}
             initialCollapsed={collapseMode === "ALL_COLLAPSED" || (collapseMode === "AUTO" && ["CLOSED", "CANCELLED"].includes(trade.status))}
           />
         ))

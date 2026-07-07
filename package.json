@@ -12,7 +12,8 @@
                     "data:macro:global":  "tsx scripts/sync-global-macro.ts",
                     "data:calendar":  "tsx scripts/sync-forex-factory-calendar.ts",
                     "data:research":  "tsx scripts/sync-sec-research.ts",
-                    "data:macro:verify":  "tsx scripts/verify-global-macro.ts"
+                    "data:macro:verify":  "tsx scripts/verify-global-macro.ts",
+                    "auth:set-password":  "tsx scripts/set-password.ts"
                 },
     "prisma":  {
                    "seed":  "tsx prisma/seed.ts"

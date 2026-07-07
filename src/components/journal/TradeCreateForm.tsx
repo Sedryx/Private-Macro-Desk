@@ -17,14 +17,12 @@ const initialState: JournalActionState = { status: "idle", message: "" };
 
 const NONE_VALUE = "NONE";
 
-export function TradeCreateForm({ assets, users }: { assets: SelectOption[]; users: SelectOption[] }) {
+export function TradeCreateForm({ assets }: { assets: SelectOption[] }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(createTrade, initialState);
   const unavailableReason = assets.length === 0
     ? "No assets are available. Run the seed or create an asset first."
-    : users.length === 0
-      ? "No traders are available. Run the seed before creating a trade."
-      : null;
+    : null;
 
   const [dailyTrend, setDailyTrend] = useState(NONE_VALUE);
   const [entryZone, setEntryZone] = useState(NONE_VALUE);
@@ -63,19 +61,11 @@ export function TradeCreateForm({ assets, users }: { assets: SelectOption[]; use
         </div>
       ) : (
         <form ref={formRef} action={formAction} className="p-5 sm:p-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <FieldLabel label="Asset">
               <select name="assetId" required className="desk-field px-3 py-2.5 text-[12px]">
                 {assets.map((asset) => (
                   <option key={asset.id} value={asset.id}>{asset.symbol} - {asset.name}</option>
-                ))}
-              </select>
-            </FieldLabel>
-
-            <FieldLabel label="Trader">
-              <select name="userId" required className="desk-field px-3 py-2.5 text-[12px]">
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>{user.name}</option>
                 ))}
               </select>
             </FieldLabel>

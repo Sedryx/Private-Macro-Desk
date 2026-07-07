@@ -9,7 +9,7 @@ import {
   type JournalActionState,
 } from "@/app/journal/actions";
 import { TradeNoteForm } from "@/components/journal/TradeNoteForm";
-import type { JournalUser, TradeView } from "@/components/journal/TradeList";
+import type { TradeView } from "@/components/journal/TradeList";
 
 const initialState: JournalActionState = { status: "idle", message: "" };
 
@@ -31,7 +31,7 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Zurich",
 });
 
-export function TradeCard({ trade, users, initialCollapsed = false }: { trade: TradeView; users: JournalUser[]; initialCollapsed?: boolean }) {
+export function TradeCard({ trade, initialCollapsed = false }: { trade: TradeView; initialCollapsed?: boolean }) {
   const [statusState, statusAction, isStatusPending] = useActionState(updateTradeStatus, initialState);
   const [deleteState, deleteAction, isDeletePending] = useActionState(deleteTrade, initialState);
   const [collapsed, setCollapsed] = useState(initialCollapsed);
@@ -228,7 +228,7 @@ export function TradeCard({ trade, users, initialCollapsed = false }: { trade: T
           <p className="mt-4 text-[12px] text-[#68736e]">No discussion yet. Add the first observation below.</p>
         )}
 
-        <TradeNoteForm tradeId={trade.id} users={users} defaultUserId={trade.userId} requestId={trade.noteRequestId} />
+        <TradeNoteForm tradeId={trade.id} requestId={trade.noteRequestId} />
       </div>
         </>
       )}

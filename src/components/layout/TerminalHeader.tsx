@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { logout } from "@/app/login/actions";
 import { activeSessionName, MarketSessions } from "@/components/layout/MarketSessions";
+import type { SessionUser } from "@/lib/auth/session";
 
 const clocks = [
   { label: "ZRH", zone: "Europe/Zurich" },
@@ -26,7 +28,7 @@ const feedItems = {
   ],
 } as const;
 
-export function TerminalHeader({ language = "en" }: { language?: string }) {
+export function TerminalHeader({ language = "en", user }: { language?: string; user?: SessionUser | null }) {
   const [now, setNow] = useState<Date | null>(null);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const isFr = language === "fr";
@@ -72,6 +74,16 @@ export function TerminalHeader({ language = "en" }: { language?: string }) {
           ))}
         </div>
       </div>
+
+      {user ? (
+        <form action={logout} className="flex h-full shrink-0 items-center gap-2 border-l border-[#262729] px-4">
+          <span className="terminal-label text-[#9a9a9a]">{user.name}</span>
+          <button type="submit" className="rounded-md border border-[#30393e] bg-[#11181c] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#aeb8b2] transition hover:border-[#4a5650] hover:text-white">
+            {isFr ? "Deconnexion" : "Logout"}
+          </button>
+        </form>
+      ) : null}
+
       {sessionsOpen && now ? (
         <MarketSessions now={now} language={language} onClose={() => setSessionsOpen(false)} />
       ) : null}

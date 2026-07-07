@@ -14,7 +14,10 @@ import {
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
+
+const SESSION_EXPIRED_MESSAGE = "Your session has expired. Please log in again.";
 
 const MAX_SCREENSHOTS = 3;
 const MAX_SCREENSHOT_SIZE = 5 * 1024 * 1024;
@@ -34,8 +37,14 @@ export async function createTrade(
   _previousState: JournalActionState,
   formData: FormData,
 ): Promise<JournalActionState> {
+  let user;
+  try {
+    user = await requireUser();
+  } catch {
+    return { status: "error", message: SESSION_EXPIRED_MESSAGE };
+  }
+
   const assetId = getString(formData, "assetId");
-  const userId = getString(formData, "userId");
   const direction = parseEnum(getString(formData, "direction"), TradeDirection);
   const status = parseEnum(getString(formData, "status"), TradeStatus);
   const thesis = getString(formData, "thesis").trim();
@@ -46,8 +55,8 @@ export async function createTrade(
   const entrySignal = parseOptionalEnum(getString(formData, "entrySignal"), EntrySignal);
   const setupValid = Boolean(dailyTrend) && Boolean(entryZone) && Boolean(entrySignal);
 
-  if (!assetId || !userId || !direction) {
-    return { status: "error", message: "Asset, trader and direction are required." };
+  if (!assetId || !direction) {
+    return { status: "error", message: "Asset and direction are required." };
   }
 
   if (!status) {
@@ -76,13 +85,10 @@ export async function createTrade(
   }
 
   try {
-    const [asset, user] = await Promise.all([
-      prisma.asset.findUnique({ where: { id: assetId }, select: { id: true } }),
-      prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-    ]);
+    const asset = await prisma.asset.findUnique({ where: { id: assetId }, select: { id: true } });
 
-    if (!asset || !user) {
-      return { status: "error", message: "The selected asset or trader no longer exists." };
+    if (!asset) {
+      return { status: "error", message: "The selected asset no longer exists." };
     }
 
     const now = new Date();
@@ -90,7 +96,7 @@ export async function createTrade(
     await prisma.trade.create({
       data: {
         assetId,
-        userId,
+        userId: user.id,
         direction,
         status,
         entryPrice: decimalFields[0].value,
@@ -122,6 +128,12 @@ export async function updateTradeStatus(
   _previousState: JournalActionState,
   formData: FormData,
 ): Promise<JournalActionState> {
+  try {
+    await requireUser();
+  } catch {
+    return { status: "error", message: SESSION_EXPIRED_MESSAGE };
+  }
+
   const tradeId = getString(formData, "tradeId");
   const status = parseEnum(getString(formData, "status"), TradeStatus);
 
@@ -163,6 +175,12 @@ export async function deleteTrade(
   _previousState: JournalActionState,
   formData: FormData,
 ): Promise<JournalActionState> {
+  try {
+    await requireUser();
+  } catch {
+    return { status: "error", message: SESSION_EXPIRED_MESSAGE };
+  }
+
   const tradeId = getString(formData, "tradeId");
 
   if (!tradeId) {
@@ -199,14 +217,20 @@ export async function addTradeNote(
   _previousState: JournalActionState,
   formData: FormData,
 ): Promise<JournalActionState> {
+  let user;
+  try {
+    user = await requireUser();
+  } catch {
+    return { status: "error", message: SESSION_EXPIRED_MESSAGE };
+  }
+
   const tradeId = getString(formData, "tradeId");
-  const userId = getString(formData, "userId");
   const clientRequestId = getString(formData, "requestId");
   const content = getString(formData, "content").trim();
   const screenshots = getScreenshotFiles(formData);
 
-  if (!tradeId || !userId || !clientRequestId) {
-    return { status: "error", message: "Trade, note author and request ID are required." };
+  if (!tradeId || !clientRequestId) {
+    return { status: "error", message: "Trade and request ID are required." };
   }
 
   if (!content && screenshots.length === 0) {
@@ -239,13 +263,10 @@ export async function addTradeNote(
       };
     }
 
-    const [trade, user] = await Promise.all([
-      prisma.trade.findUnique({ where: { id: tradeId }, select: { id: true } }),
-      prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-    ]);
+    const trade = await prisma.trade.findUnique({ where: { id: tradeId }, select: { id: true } });
 
-    if (!trade || !user) {
-      return { status: "error", message: "The trade or note author no longer exists." };
+    if (!trade) {
+      return { status: "error", message: "The trade no longer exists." };
     }
 
     screenshotUrls = await saveScreenshots(screenshots);

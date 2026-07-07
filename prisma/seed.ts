@@ -74,24 +74,26 @@ const macroSeries: Record<(typeof indicators)[number]["code"], number[]> = {
 
 async function main() {
   const joachim = await prisma.user.upsert({
-    where: { email: "joachim@private-macro-desk.local" },
+    where: { email: "joachim.espin76@gmail.com" },
     update: { name: "Joachim", role: UserRole.OWNER },
     create: {
       name: "Joachim",
-      email: "joachim@private-macro-desk.local",
+      email: "joachim.espin76@gmail.com",
       role: UserRole.OWNER,
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "friend@private-macro-desk.local" },
-    update: { name: "Friend", role: UserRole.MEMBER },
+    where: { email: "eduardo.dasilva@gmail.com" },
+    update: { name: "Eduardo", role: UserRole.MEMBER },
     create: {
-      name: "Friend",
-      email: "friend@private-macro-desk.local",
+      name: "Eduardo",
+      email: "eduardo.dasilva@gmail.com",
       role: UserRole.MEMBER,
     },
   });
+
+  // Passwords are provisioned separately via `npm run auth:set-password`.
 
   const existingSettings = await prisma.workspaceSettings.findFirst({
     select: { id: true },

@@ -2,9 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
 export async function removeResearchDocumentLocalCopy(formData: FormData) {
+  try {
+    await requireUser();
+  } catch {
+    return;
+  }
+
   const documentId = getString(formData, "documentId");
 
   if (!documentId) return;

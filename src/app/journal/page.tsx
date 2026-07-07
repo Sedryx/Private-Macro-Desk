@@ -9,14 +9,10 @@ export const dynamic = "force-dynamic";
 
 async function getJournalData() {
   try {
-    const [assets, users, trades] = await Promise.all([
+    const [assets, trades] = await Promise.all([
       prisma.asset.findMany({
         orderBy: { symbol: "asc" },
         select: { id: true, symbol: true, name: true },
-      }),
-      prisma.user.findMany({
-        orderBy: { name: "asc" },
-        select: { id: true, name: true },
       }),
       prisma.trade.findMany({
         orderBy: { createdAt: "desc" },
@@ -73,15 +69,15 @@ async function getJournalData() {
       })),
     }));
 
-    return { assets, users, trades: tradeViews, databaseError: false };
+    return { assets, trades: tradeViews, databaseError: false };
   } catch (error) {
     console.error("Unable to load the trading journal", error);
-    return { assets: [], users: [], trades: [], databaseError: true };
+    return { assets: [], trades: [], databaseError: true };
   }
 }
 
 export default async function JournalPage() {
-  const { assets, users, trades, databaseError } = await getJournalData();
+  const { assets, trades, databaseError } = await getJournalData();
 
   return (
     <>
@@ -98,7 +94,7 @@ export default async function JournalPage() {
         />
       ) : (
         <div className="space-y-10">
-          <TradeCreateForm assets={assets} users={users} />
+          <TradeCreateForm assets={assets} />
 
           <section>
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -111,7 +107,7 @@ export default async function JournalPage() {
                 {trades.length} {trades.length === 1 ? "trade" : "trades"}
               </span>
             </div>
-            <TradeList trades={trades} users={users} />
+            <TradeList trades={trades} />
           </section>
         </div>
       )}

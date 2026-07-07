@@ -2,14 +2,16 @@ import type { ReactNode } from "react";
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TerminalHeader } from "@/components/layout/TerminalHeader";
+import type { SessionUser } from "@/lib/auth/session";
 import { buildWorkspaceAppearance, type WorkspaceSettingsView } from "@/lib/settings";
 
 type AppShellProps = {
   children: ReactNode;
   settings: WorkspaceSettingsView;
+  user: SessionUser | null;
 };
 
-export function AppShell({ children, settings }: AppShellProps) {
+export function AppShell({ children, settings, user }: AppShellProps) {
   const appearance = buildWorkspaceAppearance(settings);
 
   return (
@@ -19,7 +21,7 @@ export function AppShell({ children, settings }: AppShellProps) {
     >
       <Sidebar language={settings.language} />
       <div className="w-full min-w-0 max-w-full overflow-x-hidden">
-        <TerminalHeader language={settings.language} />
+        <TerminalHeader language={settings.language} user={user} />
         <main className="mx-auto w-full min-w-0 max-w-[1560px] overflow-x-hidden px-4 py-6 sm:px-6 sm:py-7 lg:px-8 xl:px-10">
           {children}
         </main>
