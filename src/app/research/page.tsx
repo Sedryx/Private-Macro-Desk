@@ -79,7 +79,7 @@ export default async function ResearchPage() {
       <PageHeader
         eyebrow="Research / Official docs"
         title="Research library"
-        description="Official source documents synced into the desk. No manual notes, uploads, PDF parsing or AI here yet."
+        description="Official source documents synced into the desk."
       />
 
       {!documents ? (
@@ -87,7 +87,7 @@ export default async function ResearchPage() {
           <span className="mx-auto block h-px w-8 bg-[#56615b]" />
           <h2 className="mt-5 text-[15px] font-semibold text-[#d9ddda]">Research library unavailable</h2>
           <p className="mx-auto mt-2 max-w-lg text-[13px] leading-6 text-[#78827e]">
-            The app cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page.
+            Can&apos;t reach PostgreSQL. Start the database, check DATABASE_URL, then refresh.
           </p>
         </section>
       ) : (

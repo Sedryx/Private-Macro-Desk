@@ -11,6 +11,7 @@ import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
 import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
 import {
   countryMacroProfiles,
+  isLiveMacroSource,
   type CountryMacroProfile,
   type MacroSource,
   type MacroTrendPoint,
@@ -228,10 +229,6 @@ function markConnectedRegions(profiles: CountryMacroProfile[]) {
       profile.stance = "Live data";
       profile.stanceTone = "neutral";
     }
-
-    profile.summary = region.profileId === "eurozone"
-      ? "Euro Area policy rates come directly from the ECB Data Portal; inflation, labour and growth come from Eurostat. FRED is used only when an official request fails."
-      : `${region.regionName} macro data is synchronized server-side from ${region.sourceLabels.join(", ")}.`;
   }
 }
 
@@ -350,6 +347,8 @@ function normalizeSource(source: string | null, releaseType: string | null): Mac
   if (source === "DBnomics") return "DBnomics";
   if (source === "FRED/OECD") return "FRED/OECD";
   if (source === "FRED / Japan Cabinet Office") return "FRED / Japan Cabinet Office";
+  if (source === "Bundesbank") return "Bundesbank";
+  if (source === "MOF") return "MOF";
   if (source === "Calculated") return "Calculated";
   if (source === "e-Stat") return "e-Stat";
   if (source === "Eurostat") {
@@ -360,12 +359,7 @@ function normalizeSource(source: string | null, releaseType: string | null): Mac
 }
 
 function isLiveSource(source: MacroSource) {
-  return source === "ECB" || source === "Eurostat" ||
-    source === "Eurostat flash" || source === "FRED fallback" ||
-    source === "FRED" || source === "FRED / calculated" ||
-    source === "SNB" || source === "BFS" || source === "ONS" ||
-    source === "BoE" || source === "BOJ" || source === "DBnomics" ||
-    source === "FRED/OECD" || source === "FRED / Japan Cabinet Office" || source === "Calculated" || source === "e-Stat";
+  return isLiveMacroSource(source);
 }
 
 function isStale(date: Date, maxAgeDays?: number) {

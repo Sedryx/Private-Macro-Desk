@@ -1,5 +1,6 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { logout } from "@/app/login/actions";
@@ -21,10 +22,10 @@ const feedItems = {
     "EXECUTION // DISABLED",
   ],
   fr: [
-    "DONNEES MACRO // FRED - EUROSTAT - ECB",
+    "DONNÉES MACRO // FRED - EUROSTAT - ECB",
     "CALENDRIER // FOREX FACTORY HEBDO",
-    "DESK // WORKSPACE PRIVE",
-    "EXECUTION // DESACTIVEE",
+    "DESK // WORKSPACE PRIVÉ",
+    "EXÉCUTION // DÉSACTIVÉE",
   ],
 } as const;
 
@@ -65,7 +66,7 @@ export function TerminalHeader({ language = "en", user }: { language?: string; u
         ))}
       </div>
 
-      <div className="min-w-0 flex-1 overflow-hidden" aria-label={isFr ? "Statut des donnees du desk" : "Desk data status"}>
+      <div className="min-w-0 flex-1 overflow-hidden" aria-label={isFr ? "Statut des données du desk" : "Desk data status"}>
         <div className="terminal-ticker-track">
           {[...items, ...items].map((item, index) => (
             <span key={item + index} className="px-6 text-[9px] uppercase tracking-[0.1em] text-[#676767]">
@@ -76,10 +77,15 @@ export function TerminalHeader({ language = "en", user }: { language?: string; u
       </div>
 
       {user ? (
-        <form action={logout} className="flex h-full shrink-0 items-center gap-2 border-l border-[#262729] px-4">
+        <form action={logout} className="flex h-full shrink-0 items-center gap-3 border-l border-[#262729] pl-4 pr-3">
           <span className="terminal-label text-[#9a9a9a]">{user.name}</span>
-          <button type="submit" className="rounded-md border border-[#30393e] bg-[#11181c] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#aeb8b2] transition hover:border-[#4a5650] hover:text-white">
-            {isFr ? "Deconnexion" : "Logout"}
+          <button
+            type="submit"
+            title={isFr ? "Déconnexion" : "Log out"}
+            aria-label={isFr ? "Déconnexion" : "Log out"}
+            className="group flex size-7 items-center justify-center rounded-md border border-[#30393e] bg-[#11181c] text-[#8a938e] transition hover:border-[var(--negative)]/50 hover:bg-[var(--negative-soft)] hover:text-[var(--negative)]"
+          >
+            <LogOut className="size-3.5" strokeWidth={2} />
           </button>
         </form>
       ) : null}

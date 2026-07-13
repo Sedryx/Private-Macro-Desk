@@ -1,0 +1,202 @@
+export type Locale = "en" | "fr";
+
+export function resolveLocale(language?: string | null): Locale {
+  return language === "fr" ? "fr" : "en";
+}
+
+export type SettingsCopy = {
+  page: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    unavailableTitle: string;
+    unavailableDescription: string;
+  };
+  form: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    workspace: string;
+    name: string;
+    timezone: string;
+    baseCurrency: string;
+    appearance: string;
+    theme: string;
+    accentColor: string;
+    fontSize: string;
+    density: string;
+    language: string;
+    idle: string;
+    saving: string;
+    save: string;
+    dark: string;
+    darker: string;
+    green: string;
+    blue: string;
+    gray: string;
+    amber: string;
+    red: string;
+    small: string;
+    normal: string;
+    large: string;
+    compact: string;
+    comfortable: string;
+    spacious: string;
+    workspaceNameRequired: string;
+    workspaceNameTooLong: string;
+    saveSuccess: string;
+    saveError: string;
+  };
+  traders: {
+    label: string;
+    title: string;
+    empty: string;
+    save: string;
+    sessionExpired: string;
+    nameRequired: string;
+    nameTooLong: string;
+    saveSuccess: string;
+    saveError: string;
+  };
+  dataSources: {
+    label: string;
+    title: string;
+    description: string;
+    connected: string;
+    notSynced: string;
+    latestSync: string;
+  };
+};
+
+const settingsCopy: Record<Locale, SettingsCopy> = {
+  en: {
+    page: {
+      eyebrow: "Workspace / Settings",
+      title: "Desk settings",
+      description: "Display, traders and source status.",
+      unavailableTitle: "Settings unavailable",
+      unavailableDescription: "Can't reach PostgreSQL. Start the database and check DATABASE_URL, then refresh.",
+    },
+    form: {
+      eyebrow: "Workspace preferences",
+      title: "Workspace",
+      description: "Shared display defaults for this desk.",
+      workspace: "Workspace",
+      name: "Name",
+      timezone: "Timezone",
+      baseCurrency: "Base currency",
+      appearance: "Appearance",
+      theme: "Theme",
+      accentColor: "Accent color",
+      fontSize: "Font size",
+      density: "Density",
+      language: "Language",
+      idle: "Stored in PostgreSQL.",
+      saving: "Saving...",
+      save: "Save settings",
+      dark: "Dark",
+      darker: "Darker",
+      green: "Green",
+      blue: "Blue",
+      gray: "Gray",
+      amber: "Amber",
+      red: "Red",
+      small: "Small",
+      normal: "Normal",
+      large: "Large",
+      compact: "Compact",
+      comfortable: "Comfortable",
+      spacious: "Spacious",
+      workspaceNameRequired: "Workspace name is required.",
+      workspaceNameTooLong: "Workspace name is too long.",
+      saveSuccess: "Workspace settings saved.",
+      saveError: "Settings could not be saved.",
+    },
+    traders: {
+      label: "Traders",
+      title: "User names",
+      empty: "No users found. Run the seed.",
+      save: "Save",
+      sessionExpired: "Your session has expired. Please log in again.",
+      nameRequired: "Name is required.",
+      nameTooLong: "Name is too long.",
+      saveSuccess: "Trader name saved.",
+      saveError: "Trader name could not be saved.",
+    },
+    dataSources: {
+      label: "Data sources",
+      title: "Read-only status",
+      description: "API keys and secrets are never shown here.",
+      connected: "Connected",
+      notSynced: "Not synced",
+      latestSync: "Latest sync",
+    },
+  },
+  fr: {
+    page: {
+      eyebrow: "Workspace / Réglages",
+      title: "Réglages du desk",
+      description: "Affichage, traders et état des sources.",
+      unavailableTitle: "Réglages indisponibles",
+      unavailableDescription: "Impossible de joindre PostgreSQL. Démarre la base et vérifie DATABASE_URL, puis recharge la page.",
+    },
+    form: {
+      eyebrow: "Préférences du workspace",
+      title: "Workspace",
+      description: "Réglages d'affichage partagés pour ce desk.",
+      workspace: "Workspace",
+      name: "Nom",
+      timezone: "Fuseau horaire",
+      baseCurrency: "Devise de base",
+      appearance: "Apparence",
+      theme: "Thème",
+      accentColor: "Couleur d'accent",
+      fontSize: "Taille du texte",
+      density: "Densité",
+      language: "Langue",
+      idle: "Stocké dans PostgreSQL.",
+      saving: "Sauvegarde...",
+      save: "Sauvegarder",
+      dark: "Sombre",
+      darker: "Très sombre",
+      green: "Vert",
+      blue: "Bleu",
+      gray: "Gris",
+      amber: "Ambre",
+      red: "Rouge",
+      small: "Petit",
+      normal: "Normal",
+      large: "Grand",
+      compact: "Compact",
+      comfortable: "Confortable",
+      spacious: "Spacieux",
+      workspaceNameRequired: "Le nom du workspace est obligatoire.",
+      workspaceNameTooLong: "Le nom du workspace est trop long.",
+      saveSuccess: "Réglages sauvegardés.",
+      saveError: "Impossible de sauvegarder les réglages.",
+    },
+    traders: {
+      label: "Traders",
+      title: "Noms des utilisateurs",
+      empty: "Aucun utilisateur trouvé. Lance le seed.",
+      save: "Sauver",
+      sessionExpired: "Session expirée. Reconnecte-toi.",
+      nameRequired: "Le nom est obligatoire.",
+      nameTooLong: "Nom trop long.",
+      saveSuccess: "Nom du trader sauvegardé.",
+      saveError: "Impossible de sauvegarder le nom du trader.",
+    },
+    dataSources: {
+      label: "Sources de données",
+      title: "Statut lecture seule",
+      description: "Les clés API et secrets ne sont jamais affichés ici.",
+      connected: "Connecté",
+      notSynced: "Non synchronisé",
+      latestSync: "Dernière synchro",
+    },
+  },
+};
+
+export function getSettingsCopy(language?: string | null): SettingsCopy {
+  return settingsCopy[resolveLocale(language)];
+}

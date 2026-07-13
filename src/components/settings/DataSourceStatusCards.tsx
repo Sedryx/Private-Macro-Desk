@@ -1,3 +1,5 @@
+import { getSettingsCopy } from "@/lib/i18n/settings";
+
 export type DataSourceStatus = {
   name: string;
   connected: boolean;
@@ -15,13 +17,13 @@ const dateFormatter = new Intl.DateTimeFormat("en-GB", {
 });
 
 export function DataSourceStatusCards({ sources, language = "en" }: { sources: DataSourceStatus[]; language?: string }) {
-  const isFr = language === "fr";
+  const labels = getSettingsCopy(language).dataSources;
   return (
     <section className="desk-surface overflow-hidden">
       <div className="border-b border-[var(--line)] px-5 py-5">
-        <p className="terminal-label">{isFr ? "Sources de donnees" : "Data sources"}</p>
-        <h2 className="mt-2 text-[15px] font-semibold text-[#e6eae7]">{isFr ? "Statut lecture seule" : "Read-only status"}</h2>
-        <p className="mt-1 text-[11px] text-[#77817d]">{isFr ? "Les cles API et secrets ne sont jamais affiches ici." : "API keys and secrets are never shown here."}</p>
+        <p className="terminal-label">{labels.label}</p>
+        <h2 className="mt-2 text-[15px] font-semibold text-[#e6eae7]">{labels.title}</h2>
+        <p className="mt-1 text-[11px] text-[#77817d]">{labels.description}</p>
       </div>
 
       <div className="divide-y divide-[var(--line)]">
@@ -33,11 +35,11 @@ export function DataSourceStatusCards({ sources, language = "en" }: { sources: D
                 <p className="mt-1 text-[11px] text-[#707b76]">{source.detail}</p>
               </div>
               <span className={`rounded px-2 py-1 text-[9px] font-semibold ${source.connected ? "border border-[#31513a] bg-[#111d15] text-[#a8d3aa]" : "border border-[#3a3430] bg-[#191512] text-[#b68b3c]"}`}>
-                {source.connected ? (isFr ? "Connecte" : "Connected") : (isFr ? "Non synchronise" : "Not synced")}
+                {source.connected ? labels.connected : labels.notSynced}
               </span>
             </div>
             <p className="mt-3 font-mono text-[10px] text-[#68736e]">
-              {isFr ? "Derniere sync" : "Latest sync"}: {source.latestSyncedAt ? dateFormatter.format(new Date(source.latestSyncedAt)) : "-"}
+              {labels.latestSync}: {source.latestSyncedAt ? dateFormatter.format(new Date(source.latestSyncedAt)) : "-"}
             </p>
           </article>
         ))}

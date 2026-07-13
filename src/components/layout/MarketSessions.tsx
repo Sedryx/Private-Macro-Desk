@@ -124,8 +124,8 @@ export function MarketSessions({
           </div>
           <p className="mt-3 text-[9px] text-[#626264]">
             {isFr
-              ? "Horaires indicatifs des sessions cash. Les changements d'heure sont geres par chaque fuseau."
-              : "Indicative cash-session hours. Daylight-saving changes are handled from each market timezone."}
+              ? "Horaires indicatifs, heure d'été gérée par fuseau."
+              : "Indicative session hours. DST handled per timezone."}
           </p>
         </div>
       </section>

@@ -84,7 +84,7 @@ export default async function WatchlistPage() {
         <PageHeader
           eyebrow="Desk / Shared view"
           title="Watchlists"
-          description="Organise the shared market map into focused lists, then open an instrument only when its bias, level or note needs attention."
+          description="Shared market map, organised into focused lists."
         />
         {ownerFound ? <CreateWatchlistForm /> : null}
       </div>

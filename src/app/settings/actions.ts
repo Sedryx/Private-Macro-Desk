@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/session";
+import { getSettingsCopy } from "@/lib/i18n/settings";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateWorkspaceSettings } from "@/lib/settings";
 
@@ -47,14 +48,14 @@ export async function updateWorkspaceSettings(
     fontSize: getAllowed(formData, "fontSize", allowed.fontSize, "normal"),
     density: getAllowed(formData, "density", allowed.density, "compact"),
   };
-  const isFr = values.language === "fr";
+  const labels = getSettingsCopy(values.language).form;
 
   if (!values.workspaceName) {
-    return { status: "error", message: isFr ? "Le nom du workspace est obligatoire." : "Workspace name is required.", values };
+    return { status: "error", message: labels.workspaceNameRequired, values };
   }
 
   if (values.workspaceName.length > 80) {
-    return { status: "error", message: isFr ? "Le nom du workspace est trop long." : "Workspace name is too long.", values };
+    return { status: "error", message: labels.workspaceNameTooLong, values };
   }
 
   try {
@@ -66,12 +67,12 @@ export async function updateWorkspaceSettings(
 
     revalidatePath("/settings");
     revalidatePath("/", "layout");
-    return { status: "success", message: isFr ? "Reglages sauvegardes." : "Workspace settings saved.", values };
+    return { status: "success", message: labels.saveSuccess, values };
   } catch (error) {
     console.error("Unable to update workspace settings", error);
     return {
       status: "error",
-      message: isFr ? "Les reglages n'ont pas pu etre sauvegardes." : "Settings could not be saved.",
+      message: labels.saveError,
       values,
     };
   }
@@ -81,13 +82,13 @@ export async function updateUserName(
   _previousState: SettingsActionState,
   formData: FormData,
 ): Promise<SettingsActionState> {
-  const isFr = getString(formData, "language") === "fr";
+  const labels = getSettingsCopy(getString(formData, "language")).traders;
 
   let sessionUser;
   try {
     sessionUser = await requireUser();
   } catch {
-    return { status: "error", message: isFr ? "Session expiree. Reconnecte-toi." : "Your session has expired. Please log in again." };
+    return { status: "error", message: labels.sessionExpired };
   }
 
   const requestedUserId = getString(formData, "userId");
@@ -95,11 +96,11 @@ export async function updateUserName(
   const targetUserId = sessionUser.role === "OWNER" && requestedUserId ? requestedUserId : sessionUser.id;
 
   if (!name) {
-    return { status: "error", message: isFr ? "Le nom est obligatoire." : "Name is required." };
+    return { status: "error", message: labels.nameRequired };
   }
 
   if (name.length > 80) {
-    return { status: "error", message: isFr ? "Nom trop long." : "Name is too long." };
+    return { status: "error", message: labels.nameTooLong };
   }
 
   try {
@@ -107,10 +108,10 @@ export async function updateUserName(
     revalidatePath("/settings");
     revalidatePath("/journal");
     revalidatePath("/dashboard");
-    return { status: "success", message: isFr ? "Nom du trader sauvegarde." : "Trader name saved." };
+    return { status: "success", message: labels.saveSuccess };
   } catch (error) {
     console.error("Unable to update user name", error);
-    return { status: "error", message: isFr ? "Le nom du trader n'a pas pu etre sauvegarde." : "Trader name could not be saved." };
+    return { status: "error", message: labels.saveError };
   }
 }
 

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { MacroIndicatorChart } from "@/components/macro/MacroIndicatorChart";
 import {
+  isLiveMacroSource,
   macroSectionOrder,
   type CountryMacroProfile,
   type MacroSectionKey,
@@ -111,7 +112,7 @@ export function CountryMacroProfileView({
                   <p className="text-[20px] font-semibold tracking-[-0.03em] text-[#eeeeee] tabular-nums">
                     {item.value}
                   </p>
-                  <p className={changeClass(item.change)}>{item.change ?? "â€”"}</p>
+                  <p className={changeClass(item.change)}>{item.change ?? "—"}</p>
                 </div>
                 {item.latestDate ? (
                   <p className="mt-1 text-[8px] text-[#626467]">Latest / {item.latestDate}</p>
@@ -239,7 +240,7 @@ export function CountryMacroProfileView({
                   </option>
                 ))}
               </select>
-              <span className="hidden text-[10px] text-[#4f5154] sm:inline">â†’</span>
+              <span className="hidden text-[10px] text-[#4f5154] sm:inline">→</span>
               <select
                 value={comparisonMetricId}
                 disabled={!comparisonProfile}
@@ -297,7 +298,7 @@ export function CountryMacroProfileView({
                 <p className="text-[25px] font-semibold tracking-[-0.04em] text-[#f0f0f0] tabular-nums">
                   {activeMetric.value}
                 </p>
-                <p className={changeClass(activeMetric.change)}>{activeMetric.change ?? "â€”"}</p>
+                <p className={changeClass(activeMetric.change)}>{activeMetric.change ?? "—"}</p>
               </div>
               {activeMetric.context ? (
                 <p className="max-w-[520px] text-right text-[8px] leading-4 text-[#5f6264]">
@@ -387,7 +388,7 @@ function filterByTimeframe(points: MacroTrendPoint[], timeframe: Timeframe) {
 }
 
 function SourceBadge({ source }: { source: MacroSource }) {
-  const live = ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB", "SNB", "BFS", "ONS", "BoE", "BOJ", "DBnomics", "FRED/OECD", "FRED / Japan Cabinet Office", "Calculated", "e-Stat"].includes(source);
+  const live = isLiveMacroSource(source);
   return (
     <span className={live ? "text-[#53b873]" : "text-[#777a7c]"}>
       {source}

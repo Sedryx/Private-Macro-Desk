@@ -4,82 +4,19 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useState, useTransition } from "react";
 
 import { updateWorkspaceSettings, type SettingsActionState, type SettingsValues } from "@/app/settings/actions";
+import { FlagFR, FlagUK } from "@/components/icons/Flags";
+import { getSettingsCopy } from "@/lib/i18n/settings";
 import type { WorkspaceSettingsView } from "@/lib/settings";
 import { buildWorkspaceAppearance } from "@/lib/settings-appearance";
 
 const initialState: SettingsActionState = { status: "idle", message: "" };
-
-const copy = {
-  en: {
-    eyebrow: "Workspace preferences",
-    title: "Workspace",
-    description: "Shared display defaults for this private desk.",
-    workspace: "Workspace",
-    name: "Name",
-    timezone: "Timezone",
-    baseCurrency: "Base currency",
-    appearance: "Appearance",
-    theme: "Theme",
-    accentColor: "Accent color",
-    fontSize: "Font size",
-    density: "Density",
-    language: "Language",
-    idle: "Preferences are stored in PostgreSQL. Secrets are not editable here.",
-    saving: "Saving...",
-    save: "Save settings",
-    dark: "Dark",
-    darker: "Darker",
-    green: "Green",
-    blue: "Blue",
-    gray: "Gray",
-    amber: "Amber",
-    red: "Red",
-    small: "Small",
-    normal: "Normal",
-    large: "Large",
-    compact: "Compact",
-    comfortable: "Comfortable",
-    spacious: "Spacious",
-  },
-  fr: {
-    eyebrow: "Preferences du workspace",
-    title: "Workspace",
-    description: "Reglages partages pour ce desk prive.",
-    workspace: "Workspace",
-    name: "Nom",
-    timezone: "Fuseau horaire",
-    baseCurrency: "Devise de base",
-    appearance: "Apparence",
-    theme: "Theme",
-    accentColor: "Couleur d'accent",
-    fontSize: "Taille du texte",
-    density: "Densite",
-    language: "Langue",
-    idle: "Les preferences sont sauvegardees dans PostgreSQL. Les secrets ne sont pas editables ici.",
-    saving: "Sauvegarde...",
-    save: "Sauvegarder",
-    dark: "Sombre",
-    darker: "Tres sombre",
-    green: "Vert",
-    blue: "Bleu",
-    gray: "Gris",
-    amber: "Ambre",
-    red: "Rouge",
-    small: "Petit",
-    normal: "Normal",
-    large: "Grand",
-    compact: "Compact",
-    comfortable: "Confortable",
-    spacious: "Espace",
-  },
-} as const;
 
 export function SettingsForm({ settings }: { settings: WorkspaceSettingsView }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [state, setState] = useState<SettingsActionState>(initialState);
   const [values, setValues] = useState<SettingsValues>(() => toFormValues(settings));
-  const labels = values.language === "fr" ? copy.fr : copy.en;
+  const labels = getSettingsCopy(values.language).form;
 
   function updateValue<Key extends keyof SettingsValues>(key: Key, value: SettingsValues[Key]) {
     const next = { ...values, [key]: value };
@@ -172,13 +109,20 @@ export function SettingsForm({ settings }: { settings: WorkspaceSettingsView }) 
 
         <section>
           <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">{labels.language}</p>
-          <div className="grid max-w-sm gap-4 sm:grid-cols-2">
-            <label className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[#0f1519] px-3.5 py-3 text-[12px] text-[#cbd2ce]">
-              <input type="radio" name="language" value="en" checked={values.language === "en"} onChange={() => updateValue("language", "en")} /> EN
-            </label>
-            <label className="flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[#0f1519] px-3.5 py-3 text-[12px] text-[#cbd2ce]">
-              <input type="radio" name="language" value="fr" checked={values.language === "fr"} onChange={() => updateValue("language", "fr")} /> FR
-            </label>
+          <input type="hidden" name="language" value={values.language} />
+          <div className="flex max-w-sm gap-3">
+            <LanguageButton
+              active={values.language === "en"}
+              onClick={() => updateValue("language", "en")}
+              flag={<FlagUK className="h-3.5 w-5 rounded-[2px]" />}
+              label="EN"
+            />
+            <LanguageButton
+              active={values.language === "fr"}
+              onClick={() => updateValue("language", "fr")}
+              flag={<FlagFR className="h-3.5 w-5 rounded-[2px]" />}
+              label="FR"
+            />
           </div>
         </section>
 
@@ -221,5 +165,33 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span className="mb-2 block text-[11px] font-medium text-[#8e9893]">{label}</span>
       {children}
     </label>
+  );
+}
+
+function LanguageButton({
+  active,
+  onClick,
+  flag,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  flag: ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3.5 py-2.5 text-[12px] font-medium transition ${
+        active
+          ? "border-[var(--accent)] bg-[#132018] text-[#e6eae7]"
+          : "border-[var(--line)] bg-[#0f1519] text-[#8e9893] hover:border-[#3a4640] hover:text-[#cbd2ce]"
+      }`}
+    >
+      {flag}
+      {label}
+    </button>
   );
 }

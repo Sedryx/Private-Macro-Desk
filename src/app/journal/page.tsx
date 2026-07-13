@@ -84,13 +84,13 @@ export default async function JournalPage() {
       <PageHeader
         eyebrow="Desk / Review"
         title="Trading Journal"
-        description="Prepare the idea, follow its status and keep the reasoning visible to both traders."
+        description="Idea, status and reasoning, visible to both traders."
       />
 
       {databaseError ? (
         <JournalMessage
           title="Journal unavailable"
-          message="The desk cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page."
+          message="Can't reach PostgreSQL. Start the database, check DATABASE_URL, then refresh."
         />
       ) : (
         <div className="space-y-10">

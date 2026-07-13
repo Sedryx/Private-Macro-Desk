@@ -10,10 +10,7 @@ const pulseRows = [
 export function MacroPulseCard({ pulse }: { pulse: MacroPulse }) {
   return (
     <article className="desk-surface p-4">
-      <div>
-        <p className="terminal-label">Macro Pulse</p>
-        <h3 className="mt-2 text-[14px] font-semibold text-[#dfe4e0]">Real DB signals</h3>
-      </div>
+      <p className="terminal-label">Macro Pulse</p>
 
       <div className="mt-5 space-y-3">
         {pulseRows.map((row) => (

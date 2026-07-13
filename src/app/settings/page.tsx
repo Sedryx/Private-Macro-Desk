@@ -2,6 +2,7 @@ import { DataSourceStatusCards, type DataSourceStatus } from "@/components/setti
 import { SettingsForm } from "@/components/settings/SettingsForm";
 import { TraderSettingsList, type TraderSettingsUser } from "@/components/settings/TraderSettingsList";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { getSettingsCopy } from "@/lib/i18n/settings";
 import { getOrCreateWorkspaceSettings } from "@/lib/settings";
 import { prisma } from "@/lib/prisma";
 
@@ -60,21 +61,7 @@ async function getSettingsPageData() {
 export default async function SettingsPage() {
   const data = await getSettingsPageData();
   const language = data?.settings.language === "fr" ? "fr" : "en";
-  const pageCopy = language === "fr"
-    ? {
-        eyebrow: "Workspace / Reglages",
-        title: "Reglages du desk",
-        description: "Preferences privees pour l'affichage, les traders et l'etat des sources. Aucun secret n'est affiche ici.",
-        unavailableTitle: "Reglages indisponibles",
-        unavailableDescription: "L'app ne peut pas joindre PostgreSQL. Demarre la base et verifie DATABASE_URL, puis recharge cette page.",
-      }
-    : {
-        eyebrow: "Workspace / Settings",
-        title: "Desk settings",
-        description: "Private workspace preferences for display, traders and source visibility. No secrets are shown here.",
-        unavailableTitle: "Settings unavailable",
-        unavailableDescription: "The app cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page.",
-      };
+  const pageCopy = getSettingsCopy(language).page;
 
   return (
     <>

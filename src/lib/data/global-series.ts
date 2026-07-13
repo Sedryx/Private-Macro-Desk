@@ -11,6 +11,8 @@ export type GlobalProvider =
   | "FRED/OECD"
   | "FRED / Japan Cabinet Office"
   | "ECB"
+  | "Bundesbank"
+  | "MOF"
   | "Calculated";
 
 export type GlobalCountry = "CH" | "UK" | "JP" | "EU";
@@ -89,6 +91,17 @@ export type EcbGlobalSeriesConfig = BaseGlobalSeries & {
   lastNObservations?: number;
 };
 
+export type BundesbankSeriesConfig = BaseGlobalSeries & {
+  provider: "Bundesbank";
+  seriesKey: string;
+};
+
+export type MofSeriesConfig = BaseGlobalSeries & {
+  provider: "MOF";
+  csvUrl: string;
+  seriesCode: string;
+};
+
 export type DerivedGlobalSeriesConfig = BaseGlobalSeries & {
   provider: "Calculated";
   formula: "SUBTRACT";
@@ -105,6 +118,8 @@ export type OfficialGlobalSeriesConfig =
   | DbnomicsSeriesConfig
   | FredGlobalSeriesConfig
   | EcbGlobalSeriesConfig
+  | BundesbankSeriesConfig
+  | MofSeriesConfig
   | DerivedGlobalSeriesConfig;
 
 const ui = (
@@ -207,6 +222,38 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
   },
   {
     provider: "SNB",
+    code: "CH_1Y",
+    name: "Swiss Confederation 1Y Yield",
+    category: MacroCategory.RATES,
+    country: "CH",
+    unit: "%",
+    cubeId: "rendoblid",
+    dimensions: { D0: "1J" },
+    sourceUrl: "https://data.snb.ch/api/cube/rendoblid/data/csv/en?dimSel=D0(1J)",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "ch-1y", "percent", "bp", "CH 1Y", undefined, 2),
+  },
+  {
+    provider: "SNB",
+    code: "CH_5Y",
+    name: "Swiss Confederation 5Y Yield",
+    category: MacroCategory.RATES,
+    country: "CH",
+    unit: "%",
+    cubeId: "rendoblid",
+    dimensions: { D0: "5J" },
+    sourceUrl: "https://data.snb.ch/api/cube/rendoblid/data/csv/en?dimSel=D0(5J)",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "ch-5y", "percent", "bp", "CH 5Y", undefined, 2),
+  },
+  {
+    provider: "SNB",
     code: "CH_10Y",
     name: "Swiss Confederation 10Y Yield",
     category: MacroCategory.RATES,
@@ -305,6 +352,21 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
   },
   {
     provider: "BoE",
+    code: "UK_5Y",
+    name: "UK 5Y Gilt Yield",
+    category: MacroCategory.RATES,
+    country: "UK",
+    unit: "%",
+    seriesCode: "IUDSNPY",
+    sourceUrl: "https://www.bankofengland.co.uk/boeapps/database/",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "uk-5y", "percent", "bp", "UK 5Y", undefined, 2),
+  },
+  {
+    provider: "BoE",
     code: "UK_10Y",
     name: "UK 10Y Gilt Yield",
     category: MacroCategory.RATES,
@@ -396,6 +458,38 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     ui: ui("growth", "jp-gdp", "percent", "pp", "Real GDP", undefined, 1),
   },
   {
+    provider: "MOF",
+    code: "JP_1Y",
+    name: "Japan 1Y Government Bond Yield",
+    category: MacroCategory.RATES,
+    country: "JP",
+    unit: "%",
+    csvUrl: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv",
+    seriesCode: "1Y",
+    sourceUrl: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "jp-1y", "percent", "bp", "JP 1Y", undefined, 2),
+  },
+  {
+    provider: "MOF",
+    code: "JP_5Y",
+    name: "Japan 5Y Government Bond Yield",
+    category: MacroCategory.RATES,
+    country: "JP",
+    unit: "%",
+    csvUrl: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv",
+    seriesCode: "5Y",
+    sourceUrl: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/index.htm",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "jp-5y", "percent", "bp", "JP 5Y", undefined, 2),
+  },
+  {
     provider: "FRED/OECD",
     code: "JP_10Y",
     name: "Japan 10Y Government Bond Yield",
@@ -442,6 +536,36 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     valueKind: "fx",
     transform: "DIRECT",
     ui: ui("ratesMarkets", "eu-eurusd", "index", "value", "EUR/USD", "marketProxy", 4),
+  },
+  {
+    provider: "Bundesbank",
+    code: "EU_DE_1Y",
+    name: "Germany 1Y Bund Yield",
+    category: MacroCategory.RATES,
+    country: "EU",
+    unit: "%",
+    seriesKey: "D.I.ZAR.ZI.EUR.S1311.B.A604.R01XX.R.A.A._Z._Z.A",
+    sourceUrl: "https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields/daily-term-structure-of-interest-rates-on-listed-federal-securities-650724",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "eu-de-1y", "percent", "bp", "Germany 1Y", undefined, 2),
+  },
+  {
+    provider: "Bundesbank",
+    code: "EU_DE_5Y",
+    name: "Germany 5Y Bund Yield",
+    category: MacroCategory.RATES,
+    country: "EU",
+    unit: "%",
+    seriesKey: "D.I.ZAR.ZI.EUR.S1311.B.A604.R05XX.R.A.A._Z._Z.A",
+    sourceUrl: "https://www.bundesbank.de/en/statistics/money-and-capital-markets/interest-rates-and-yields/daily-term-structure-of-interest-rates-on-listed-federal-securities-650724",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "yield",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "eu-de-5y", "percent", "bp", "Germany 5Y", undefined, 2),
   },
   {
     provider: "FRED/OECD",

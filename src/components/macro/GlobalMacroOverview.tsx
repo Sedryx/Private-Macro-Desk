@@ -1,4 +1,4 @@
-import type { CountryMacroProfile } from "@/lib/macroProfiles";
+import { isLiveMacroSource, type CountryMacroProfile } from "@/lib/macroProfiles";
 
 export function GlobalMacroOverview({ profiles }: { profiles: CountryMacroProfile[] }) {
   return (
@@ -40,9 +40,7 @@ function SourceBadge({ profile }: { profile: CountryMacroProfile }) {
   const sources = Object.values(profile.sections).flatMap((section) =>
     section.indicators.map((indicator) => indicator.source),
   );
-  const hasLiveData = sources.some((source) =>
-    ["FRED", "FRED / calculated", "FRED fallback", "Eurostat", "Eurostat flash", "ECB", "SNB", "BFS", "ONS", "BoE", "BOJ", "DBnomics", "FRED/OECD", "FRED / Japan Cabinet Office", "Calculated", "e-Stat"].includes(source),
-  );
+  const hasLiveData = sources.some(isLiveMacroSource);
   const label = hasLiveData ? profile.stance : profile.countryCode === "US" || profile.countryCode === "EU" ? "Not connected" : "Coming soon";
 
   return (

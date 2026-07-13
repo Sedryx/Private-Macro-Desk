@@ -1,6 +1,8 @@
 import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
 import { syncEuroAreaData } from "@/lib/data/euroAreaSync";
 import { FRED_SERIES, syncFredSeries } from "@/lib/data/fred";
+import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
+import { syncGlobalSeries } from "@/lib/data/globalSync";
 import { syncSecResearchDocuments } from "@/lib/data/secResearch";
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
@@ -9,6 +11,7 @@ const US_FRED_SERIES = FRED_SERIES.filter((series) => series.country === "US");
 const EXPECTED_CODES = [
   ...US_FRED_SERIES.map((series) => series.code),
   ...OFFICIAL_EURO_AREA_SERIES.map((series) => series.code),
+  ...OFFICIAL_GLOBAL_SERIES.map((series) => series.code),
 ];
 
 type SchedulerState = {
@@ -100,6 +103,16 @@ export async function syncMacroIfStale(force = false) {
   for (const failure of euroArea.failures) {
     failures.push(failure.code);
     console.error(`[Macro scheduler] ${failure.code}: ${failure.message}`);
+  }
+
+  for (const series of OFFICIAL_GLOBAL_SERIES) {
+    try {
+      const result = await syncGlobalSeries(series);
+      console.log(`[Macro scheduler] ${result.code}: ${result.valueCount} ${result.source} values.`);
+    } catch (error) {
+      failures.push(series.code);
+      console.error(`[Macro scheduler] ${series.code}: ${errorMessage(error)}`);
+    }
   }
 
   console.log("[Macro scheduler] Refresh complete.");

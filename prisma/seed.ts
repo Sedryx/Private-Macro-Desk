@@ -3,7 +3,6 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   AssetType,
-  MacroCategory,
   PrismaClient,
   UserRole,
 } from "@prisma/client";
@@ -63,14 +62,6 @@ const starterAssetKeys = new Set([
   "BTCUSD:CRYPTO",
   "US10Y:RATE",
 ]);
-
-const indicators = [
-  { code: "SNB_POLICY_RATE", name: "SNB Policy Rate", country: "CH", category: MacroCategory.CENTRAL_BANK, unit: "%", source: "Demo seed - not live" },
-] as const;
-
-const macroSeries: Record<(typeof indicators)[number]["code"], number[]> = {
-  SNB_POLICY_RATE: [1.75, 1.75, 1.5, 1.5, 1.25, 1.25, 1.0, 1.0, 0.75, 0.75, 0.5, 0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.25],
-};
 
 async function main() {
   const joachim = await prisma.user.upsert({
@@ -152,25 +143,6 @@ async function main() {
     });
   }
 
-  for (const indicator of indicators) {
-    const seededIndicator = await prisma.macroIndicator.upsert({
-      where: { code: indicator.code },
-      update: indicator,
-      create: indicator,
-    });
-
-    await prisma.macroValue.deleteMany({
-      where: { indicatorId: seededIndicator.id },
-    });
-
-    await prisma.macroValue.createMany({
-      data: macroSeries[indicator.code].map((value, monthIndex) => ({
-        indicatorId: seededIndicator.id,
-        date: new Date(Date.UTC(2025, monthIndex, 1)),
-        value,
-      })),
-    });
-  }
 }
 
 main()

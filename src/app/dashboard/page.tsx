@@ -312,7 +312,7 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow="Desk / Home"
         title="Desk overview"
-        description="A quick read of the shared watchlist, active trade workflow and the latest journal context."
+        description="Watchlist, trade workflow and journal context."
       />
 
       {!data ? (
@@ -320,7 +320,7 @@ export default async function DashboardPage() {
           <span className="mx-auto block h-px w-8 bg-[#56615b]" />
           <h2 className="mt-5 text-[15px] font-semibold text-[#d9ddda]">Dashboard unavailable</h2>
           <p className="mx-auto mt-2 max-w-lg text-[13px] leading-6 text-[#78827e]">
-            The desk cannot reach PostgreSQL. Start the database and check DATABASE_URL, then refresh this page.
+            Can&apos;t reach PostgreSQL. Start the database, check DATABASE_URL, then refresh.
           </p>
         </section>
       ) : (
@@ -351,7 +351,6 @@ export default async function DashboardPage() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Internal data</p>
                 <h2 className="mt-2 text-lg font-semibold tracking-[-0.02em] text-[#e6eae7]">Desk Visuals</h2>
               </div>
-              <p className="hidden text-[10px] text-[#626d68] sm:block">No external market feed</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <DeskVisuals
