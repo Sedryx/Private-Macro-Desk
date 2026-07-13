@@ -46,7 +46,6 @@ export function SettingsForm({ settings }: { settings: WorkspaceSettingsView }) 
       <div className="border-b border-[var(--line)] px-5 py-5 sm:px-6">
         <p className="terminal-label">{labels.eyebrow}</p>
         <h2 className="mt-2 text-[17px] font-semibold tracking-[-0.02em] text-[#e6eae7]">{labels.title}</h2>
-        <p className="mt-1 text-[12px] leading-5 text-[#77817d]">{labels.description}</p>
       </div>
 
       <div className="space-y-7 p-5 sm:p-6">

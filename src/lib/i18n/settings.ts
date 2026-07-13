@@ -8,14 +8,12 @@ export type SettingsCopy = {
   page: {
     eyebrow: string;
     title: string;
-    description: string;
     unavailableTitle: string;
     unavailableDescription: string;
   };
   form: {
     eyebrow: string;
     title: string;
-    description: string;
     workspace: string;
     name: string;
     timezone: string;
@@ -73,14 +71,12 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
     page: {
       eyebrow: "Workspace / Settings",
       title: "Desk settings",
-      description: "Display, traders and source status.",
       unavailableTitle: "Settings unavailable",
       unavailableDescription: "Can't reach PostgreSQL. Start the database and check DATABASE_URL, then refresh.",
     },
     form: {
       eyebrow: "Workspace preferences",
       title: "Workspace",
-      description: "Shared display defaults for this desk.",
       workspace: "Workspace",
       name: "Name",
       timezone: "Timezone",
@@ -136,14 +132,12 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
     page: {
       eyebrow: "Workspace / Réglages",
       title: "Réglages du desk",
-      description: "Affichage, traders et état des sources.",
       unavailableTitle: "Réglages indisponibles",
       unavailableDescription: "Impossible de joindre PostgreSQL. Démarre la base et vérifie DATABASE_URL, puis recharge la page.",
     },
     form: {
       eyebrow: "Préférences du workspace",
       title: "Workspace",
-      description: "Réglages d'affichage partagés pour ce desk.",
       workspace: "Workspace",
       name: "Nom",
       timezone: "Fuseau horaire",

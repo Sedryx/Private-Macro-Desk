@@ -21,18 +21,8 @@ export function DeskVisuals({
 }) {
   return (
     <>
-      <DistributionCard
-        eyebrow="Journal"
-        title="Trade Status Distribution"
-        description="All trades currently recorded in the journal."
-        items={tradeStatuses}
-      />
-      <DistributionCard
-        eyebrow="Watchlist"
-        title="Watchlist Bias Distribution"
-        description="Current bias across the shared Main Watchlist."
-        items={watchlistBiases}
-      />
+      <DistributionCard eyebrow="Journal" title="Trade Status Distribution" items={tradeStatuses} />
+      <DistributionCard eyebrow="Watchlist" title="Watchlist Bias Distribution" items={watchlistBiases} />
       <article className="desk-surface p-4">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -70,12 +60,10 @@ export function DeskVisuals({
 function DistributionCard({
   eyebrow,
   title,
-  description,
   items,
 }: {
   eyebrow: string;
   title: string;
-  description: string;
   items: DistributionItem[];
 }) {
   const maximum = Math.max(...items.map((item) => item.value), 1);
@@ -87,7 +75,6 @@ function DistributionCard({
         <div>
           <p className="terminal-label">{eyebrow + " // Distribution"}</p>
           <h3 className="mt-2 text-[14px] font-semibold text-[#dfe4e0]">{title}</h3>
-          <p className="mt-1 text-[11px] text-[#707b76]">{description}</p>
         </div>
         <span className="text-[10px] text-[#626d68]">{total} total</span>
       </div>

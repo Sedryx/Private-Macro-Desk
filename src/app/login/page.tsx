@@ -14,7 +14,6 @@ export default function LoginPage() {
       <div className="border-b border-[var(--line)] px-6 py-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Private Macro Desk</p>
         <h1 className="mt-2 text-[17px] font-semibold tracking-[-0.02em] text-[#e6eae7]">Sign in</h1>
-        <p className="mt-1 text-[12px] leading-5 text-[#77817d]">Access the desk with your trader account.</p>
       </div>
 
       <form action={formAction} className="p-6">

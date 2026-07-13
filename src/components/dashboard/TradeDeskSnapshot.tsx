@@ -40,7 +40,6 @@ export function TradeDeskSnapshot({ trades, notes }: { trades: TradeDeskItem[]; 
         <div>
           <p className="terminal-label">Journal activity // Latest</p>
           <h2 className="mt-2 text-[15px] font-semibold text-[#e4e8e5]">Trade Desk</h2>
-          <p className="mt-1 text-[12px] text-[#707b76]">Recent decisions and desk notes.</p>
         </div>
         <Link href="/journal" className="text-[10px] font-medium text-[#a3a3a3] transition hover:text-white">
           Open journal →

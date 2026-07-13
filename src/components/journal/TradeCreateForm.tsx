@@ -52,7 +52,6 @@ export function TradeCreateForm({ assets }: { assets: SelectOption[] }) {
       <div className="border-b border-[var(--line)] px-5 py-5 sm:px-6">
         <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">Preparation</p>
         <h2 className="mt-2 text-[17px] font-semibold tracking-[-0.02em] text-[#e6eae7]">Create trade idea</h2>
-        <p className="mt-1 text-[12px] leading-5 text-[#77817d]">Write the plan before the market writes the story for you.</p>
       </div>
 
       {unavailableReason ? (

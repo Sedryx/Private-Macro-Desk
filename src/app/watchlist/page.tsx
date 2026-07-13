@@ -81,11 +81,7 @@ export default async function WatchlistPage() {
   return (
     <>
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <PageHeader
-          eyebrow="Desk / Shared view"
-          title="Watchlists"
-          description="Shared market map, organised into focused lists."
-        />
+        <PageHeader eyebrow="Desk / Shared view" title="Watchlists" />
         {ownerFound ? <CreateWatchlistForm /> : null}
       </div>
 

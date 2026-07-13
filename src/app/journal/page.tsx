@@ -81,11 +81,7 @@ export default async function JournalPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Desk / Review"
-        title="Trading Journal"
-        description="Idea, status and reasoning, visible to both traders."
-      />
+      <PageHeader eyebrow="Desk / Review" title="Trading Journal" />
 
       {databaseError ? (
         <JournalMessage

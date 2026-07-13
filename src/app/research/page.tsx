@@ -76,11 +76,7 @@ export default async function ResearchPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Research / Official docs"
-        title="Research library"
-        description="Official source documents synced into the desk."
-      />
+      <PageHeader eyebrow="Research / Official docs" title="Research library" />
 
       {!documents ? (
         <section className="desk-surface px-6 py-16 text-center">

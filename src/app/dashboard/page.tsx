@@ -309,11 +309,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Desk / Home"
-        title="Desk overview"
-        description="Watchlist, trade workflow and journal context."
-      />
+      <PageHeader eyebrow="Desk / Home" title="Desk overview" />
 
       {!data ? (
         <section className="desk-surface px-6 py-16 text-center">

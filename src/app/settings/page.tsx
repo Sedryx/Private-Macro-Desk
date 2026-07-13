@@ -65,11 +65,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow={pageCopy.eyebrow}
-        title={pageCopy.title}
-        description={pageCopy.description}
-      />
+      <PageHeader eyebrow={pageCopy.eyebrow} title={pageCopy.title} />
 
       {!data ? (
         <section className="desk-surface px-6 py-16 text-center">
