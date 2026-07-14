@@ -13,62 +13,31 @@ async function getOfficialResearchDocuments() {
       orderBy: [{ filedAt: "desc" }, { createdAt: "desc" }],
       select: {
         id: true,
-        ticker: true,
         title: true,
-        companyName: true,
         formType: true,
         filedAt: true,
-        reportDate: true,
         provider: true,
+        country: true,
         sourceUrl: true,
         fileUrl: true,
-        secItems: true,
-        exhibits: true,
-        importance: true,
-        category: true,
         summary: true,
       },
     });
 
     return documents.map((document): OfficialResearchDocumentItem => ({
       id: document.id,
-      ticker: document.ticker,
       title: document.title,
-      companyName: document.companyName,
-      formType: document.formType,
+      kind: document.formType,
       filedAt: document.filedAt?.toISOString() ?? null,
-      reportDate: document.reportDate?.toISOString() ?? null,
       provider: document.provider,
+      country: document.country,
       sourceUrl: document.sourceUrl ?? document.fileUrl,
-      secItems: document.secItems,
-      exhibits: normalizeExhibits(document.exhibits),
-      importance: document.importance,
-      category: document.category,
       summary: document.summary,
     }));
   } catch (error) {
     console.error("Unable to load official research documents", error);
     return null;
   }
-}
-
-function normalizeExhibits(value: unknown): OfficialResearchDocumentItem["exhibits"] {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .map((entry) => {
-      if (typeof entry !== "object" || entry === null) return null;
-      const exhibit = "exhibit" in entry ? entry.exhibit : null;
-      const label = "label" in entry ? entry.label : null;
-      const url = "url" in entry ? entry.url : null;
-
-      if (typeof exhibit !== "string" || typeof label !== "string" || typeof url !== "string") {
-        return null;
-      }
-
-      return { exhibit, label, url };
-    })
-    .filter((entry): entry is OfficialResearchDocumentItem["exhibits"][number] => entry !== null);
 }
 
 export default async function ResearchPage() {

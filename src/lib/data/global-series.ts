@@ -202,7 +202,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "monthly",
     valueKind: "unemployment",
     transform: "DIRECT",
-    ui: ui("labour", "ch-unemployment", "percent", "pp", "Registered unemployment", "unemployment", 1),
+    ui: ui("labour", "ch-unemployment", "percent", "pp", "Unemployment", "unemployment", 1),
   },
   {
     provider: "SNB",
@@ -218,7 +218,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "quarterly",
     valueKind: "gdp_qoq",
     transform: "DIRECT",
-    ui: ui("growth", "ch-gdp", "percent", "pp", "Real GDP", undefined, 1),
+    ui: ui("growth", "ch-gdp", "percent", "pp", "GDP", undefined, 1),
   },
   {
     provider: "SNB",
@@ -266,7 +266,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "daily",
     valueKind: "yield",
     transform: "DIRECT",
-    ui: ui("ratesMarkets", "ch-10y", "percent", "bp", "CH 10Y", undefined, 2),
+    ui: ui("ratesMarkets", "ch-10y", "percent", "bp", "Swiss 10Y", undefined, 2),
   },
   {
     provider: "SNB",
@@ -348,7 +348,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "quarterly",
     valueKind: "gdp_qoq",
     transform: "QOQ_PERCENT",
-    ui: ui("growth", "uk-gdp", "percent", "pp", "Real GDP", undefined, 1),
+    ui: ui("growth", "uk-gdp", "percent", "pp", "GDP", undefined, 1),
   },
   {
     provider: "BoE",
@@ -455,7 +455,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "quarterly",
     valueKind: "gdp_qoq",
     transform: "QOQ_PERCENT",
-    ui: ui("growth", "jp-gdp", "percent", "pp", "Real GDP", undefined, 1),
+    ui: ui("growth", "jp-gdp", "percent", "pp", "GDP", undefined, 1),
   },
   {
     provider: "MOF",
@@ -502,7 +502,7 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     frequency: "monthly",
     valueKind: "yield",
     transform: "DIRECT",
-    ui: ui("ratesMarkets", "jp-10y", "percent", "bp", "JP 10Y", undefined, 2),
+    ui: ui("ratesMarkets", "jp-10y", "percent", "bp", "JGB 10Y", undefined, 2),
   },
   {
     provider: "BOJ",

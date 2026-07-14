@@ -14,10 +14,6 @@ export type SettingsCopy = {
   form: {
     eyebrow: string;
     title: string;
-    workspace: string;
-    name: string;
-    timezone: string;
-    baseCurrency: string;
     appearance: string;
     theme: string;
     accentColor: string;
@@ -40,8 +36,6 @@ export type SettingsCopy = {
     compact: string;
     comfortable: string;
     spacious: string;
-    workspaceNameRequired: string;
-    workspaceNameTooLong: string;
     saveSuccess: string;
     saveError: string;
   };
@@ -53,16 +47,16 @@ export type SettingsCopy = {
     sessionExpired: string;
     nameRequired: string;
     nameTooLong: string;
+    emailRequired: string;
+    emailInvalid: string;
+    emailTaken: string;
+    passwordRequired: string;
+    passwordIncorrect: string;
     saveSuccess: string;
+    migrateSuccess: string;
     saveError: string;
-  };
-  dataSources: {
-    label: string;
-    title: string;
-    description: string;
-    connected: string;
-    notSynced: string;
-    latestSync: string;
+    emailChangeWarning: string;
+    confirmPasswordLabel: string;
   };
 };
 
@@ -77,10 +71,6 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
     form: {
       eyebrow: "Workspace preferences",
       title: "Workspace",
-      workspace: "Workspace",
-      name: "Name",
-      timezone: "Timezone",
-      baseCurrency: "Base currency",
       appearance: "Appearance",
       theme: "Theme",
       accentColor: "Accent color",
@@ -103,8 +93,6 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
       compact: "Compact",
       comfortable: "Comfortable",
       spacious: "Spacious",
-      workspaceNameRequired: "Workspace name is required.",
-      workspaceNameTooLong: "Workspace name is too long.",
       saveSuccess: "Workspace settings saved.",
       saveError: "Settings could not be saved.",
     },
@@ -116,16 +104,16 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
       sessionExpired: "Your session has expired. Please log in again.",
       nameRequired: "Name is required.",
       nameTooLong: "Name is too long.",
+      emailRequired: "Email is required.",
+      emailInvalid: "Enter a valid email address.",
+      emailTaken: "This email is already used by another trader.",
+      passwordRequired: "Enter your password to confirm this change.",
+      passwordIncorrect: "Incorrect password.",
       saveSuccess: "Trader name saved.",
-      saveError: "Trader name could not be saved.",
-    },
-    dataSources: {
-      label: "Data sources",
-      title: "Read-only status",
-      description: "API keys and secrets are never shown here.",
-      connected: "Connected",
-      notSynced: "Not synced",
-      latestSync: "Latest sync",
+      migrateSuccess: "Account migrated to the new email.",
+      saveError: "Trader could not be saved.",
+      emailChangeWarning: "Changing the email creates a new account with the same password, moves all data over, then deletes the old one.",
+      confirmPasswordLabel: "Confirm with password",
     },
   },
   fr: {
@@ -138,10 +126,6 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
     form: {
       eyebrow: "Préférences du workspace",
       title: "Workspace",
-      workspace: "Workspace",
-      name: "Nom",
-      timezone: "Fuseau horaire",
-      baseCurrency: "Devise de base",
       appearance: "Apparence",
       theme: "Thème",
       accentColor: "Couleur d'accent",
@@ -164,8 +148,6 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
       compact: "Compact",
       comfortable: "Confortable",
       spacious: "Spacieux",
-      workspaceNameRequired: "Le nom du workspace est obligatoire.",
-      workspaceNameTooLong: "Le nom du workspace est trop long.",
       saveSuccess: "Réglages sauvegardés.",
       saveError: "Impossible de sauvegarder les réglages.",
     },
@@ -177,16 +159,16 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
       sessionExpired: "Session expirée. Reconnecte-toi.",
       nameRequired: "Le nom est obligatoire.",
       nameTooLong: "Nom trop long.",
+      emailRequired: "L'email est obligatoire.",
+      emailInvalid: "Entre une adresse email valide.",
+      emailTaken: "Cet email est déjà utilisé par un autre trader.",
+      passwordRequired: "Entre ton mot de passe pour confirmer ce changement.",
+      passwordIncorrect: "Mot de passe incorrect.",
       saveSuccess: "Nom du trader sauvegardé.",
-      saveError: "Impossible de sauvegarder le nom du trader.",
-    },
-    dataSources: {
-      label: "Sources de données",
-      title: "Statut lecture seule",
-      description: "Les clés API et secrets ne sont jamais affichés ici.",
-      connected: "Connecté",
-      notSynced: "Non synchronisé",
-      latestSync: "Dernière synchro",
+      migrateSuccess: "Compte migré vers la nouvelle adresse email.",
+      saveError: "Impossible de sauvegarder le trader.",
+      emailChangeWarning: "Changer l'email crée un nouveau compte avec le même mot de passe, transfère toutes les données, puis supprime l'ancien.",
+      confirmPasswordLabel: "Confirmer avec le mot de passe",
     },
   },
 };

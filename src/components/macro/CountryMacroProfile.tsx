@@ -89,17 +89,9 @@ export function CountryMacroProfileView({
   return (
     <div className="space-y-3">
       <section className="desk-surface overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-[var(--line)] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="terminal-label">{profile.countryCode} / {profile.currency}</p>
-            <h2 className="mt-1 text-[18px] font-semibold text-[#f1f1f1]">{profile.country}</h2>
-          </div>
-          <dl className="grid grid-cols-2 gap-x-7 gap-y-3 sm:grid-cols-4">
-            <HeaderMetric label="Central bank" value={profile.centralBank} />
-            <HeaderMetric label="Policy rate" value={profile.policyRate} />
-            <HeaderMetric label="Next meeting" value={profile.nextMeeting} />
-            <HeaderMetric label="Status" value={profile.stance} />
-          </dl>
+        <div className="border-b border-[var(--line)] px-4 py-3">
+          <p className="terminal-label">{profile.countryCode} / {profile.currency}</p>
+          <h2 className="mt-1 text-[18px] font-semibold text-[#f1f1f1]">{profile.country}</h2>
         </div>
 
         <div className="p-4">
@@ -336,7 +328,7 @@ export function CountryMacroProfileView({
 }
 
 function isSelectableMetric(metric: { history: MacroTrendPoint[]; source: MacroSource }) {
-  return metric.history.length > 0 && metric.source !== "Demo" && metric.source !== "Coming soon" && metric.source !== "Not connected";
+  return metric.history.length > 0 && metric.source !== "Coming soon" && metric.source !== "Not connected";
 }
 
 function firstConnectedMetric(profile: CountryMacroProfile) {
@@ -393,17 +385,6 @@ function SourceBadge({ source }: { source: MacroSource }) {
     <span className={live ? "text-[#53b873]" : "text-[#777a7c]"}>
       {source}
     </span>
-  );
-}
-
-function HeaderMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="terminal-label text-[7px]">{label}</dt>
-      <dd className="mt-1 max-w-[175px] truncate text-[10px] text-[#c7c7c7]" title={value}>
-        {value}
-      </dd>
-    </div>
   );
 }
 

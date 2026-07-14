@@ -239,6 +239,7 @@ model ResearchDocument {
   id           String          @id @default(cuid())
   externalId   String?
   provider     String?
+  country      String?
   ticker       String?
   companyName  String?
   formType     String?
@@ -261,6 +262,7 @@ model ResearchDocument {
   chunks       ResearchChunk[]
 
   @@index([provider])
+  @@index([country])
   @@index([ticker])
   @@index([filedAt])
   @@index([formType])

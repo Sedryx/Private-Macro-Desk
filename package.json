@@ -11,7 +11,10 @@
         "data:macro": "tsx scripts/sync-macro.ts",
         "data:macro:global": "tsx scripts/sync-global-macro.ts",
         "data:calendar": "tsx scripts/sync-forex-factory-calendar.ts",
-        "data:research": "tsx scripts/sync-sec-research.ts",
+        "data:research": "tsx scripts/sync-fed-research.ts && tsx scripts/sync-ecb-research.ts",
+        "data:research:fed": "tsx scripts/sync-fed-research.ts",
+        "data:research:ecb": "tsx scripts/sync-ecb-research.ts",
+        "data:research:sec": "tsx scripts/sync-sec-research.ts",
         "data:macro:verify": "tsx scripts/verify-global-macro.ts",
         "auth:set-password": "tsx scripts/set-password.ts"
     },

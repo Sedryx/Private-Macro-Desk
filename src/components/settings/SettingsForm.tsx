@@ -50,28 +50,6 @@ export function SettingsForm({ settings }: { settings: WorkspaceSettingsView }) 
 
       <div className="space-y-7 p-5 sm:p-6">
         <section>
-          <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">{labels.workspace}</p>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Field label={labels.name}>
-              <input name="workspaceName" required value={values.workspaceName} onChange={(event) => updateValue("workspaceName", event.target.value)} maxLength={80} className="desk-field px-3 py-2.5 text-[12px]" />
-            </Field>
-            <Field label={labels.timezone}>
-              <select name="timezone" value={values.timezone} onChange={(event) => updateValue("timezone", event.target.value)} className="desk-field px-3 py-2.5 text-[12px]">
-                <option value="Europe/Zurich">Europe/Zurich</option>
-                <option value="America/New_York">America/New_York</option>
-                <option value="Europe/London">Europe/London</option>
-                <option value="Asia/Tokyo">Asia/Tokyo</option>
-              </select>
-            </Field>
-            <Field label={labels.baseCurrency}>
-              <select name="baseCurrency" value={values.baseCurrency} onChange={(event) => updateValue("baseCurrency", event.target.value)} className="desk-field px-3 py-2.5 text-[12px]">
-                {["USD", "EUR", "CHF", "GBP", "JPY", "CAD", "AUD"].map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-              </select>
-            </Field>
-          </div>
-        </section>
-
-        <section>
           <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7f8b84]">{labels.appearance}</p>
           <div className="grid gap-4 md:grid-cols-4">
             <Field label={labels.theme}>
@@ -138,10 +116,7 @@ export function SettingsForm({ settings }: { settings: WorkspaceSettingsView }) 
 
 function toFormValues(settings: WorkspaceSettingsView): SettingsValues {
   return {
-    workspaceName: settings.workspaceName,
     language: settings.language,
-    timezone: settings.timezone,
-    baseCurrency: settings.baseCurrency,
     theme: settings.theme,
     accentColor: settings.accentColor,
     fontSize: settings.fontSize,

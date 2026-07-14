@@ -7,7 +7,6 @@ export type MacroSectionKey =
 
 export type MacroTrendPoint = { label: string; value: number; date?: string };
 export type MacroSource =
-  | "Demo"
   | "FRED"
   | "FRED / calculated"
   | "FRED fallback"
@@ -105,27 +104,6 @@ export const macroSectionOrder: MacroSectionKey[] = [
   "ratesMarkets",
 ];
 
-const periods = ["Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun"];
-
-function metric(
-  id: string,
-  label: string,
-  value: string,
-  start: number,
-  end: number,
-  change?: string,
-  context?: string,
-): MacroMetric {
-  const distance = end - start;
-  const wobble = Math.max(Math.abs(distance) * 0.06, Math.abs(end) * 0.006, 0.015);
-  const history = periods.map((period, index) => {
-    const progress = index / (periods.length - 1);
-    const variation = index === 0 || index === periods.length - 1 ? 0 : Math.sin(index * 1.9) * wobble;
-    return { label: period, value: Number((start + distance * progress + variation).toFixed(3)) };
-  });
-  return { id, label, value, change, context, source: "Demo", history };
-}
-
 function section(title: string, shortTitle: string, indicators: MacroMetric[]): MacroSection {
   return { title, shortTitle, indicators };
 }
@@ -145,85 +123,8 @@ function notConnectedMetric(
   };
 }
 
-function removeUnitedStatesDemoData(profile: CountryMacroProfile) {
-  profile.policyRate = "Not connected yet";
-  profile.nextMeeting = "Not connected yet";
-  profile.stance = "Awaiting FRED sync";
-  profile.stanceTone = "neutral";
-  profile.inflation = "Not connected yet";
-  profile.unemployment = "Not connected yet";
-  profile.marketProxy = "Not connected yet";
-  profile.snapshot = [
-    { label: "Fed funds", value: "Not connected yet", source: "Not connected" },
-    { label: "CPI YoY", value: "Not connected yet", source: "Not connected" },
-    { label: "Unemployment", value: "Not connected yet", source: "Not connected" },
-    { label: "Real GDP", value: "Not connected yet", source: "Not connected" },
-    { label: "US 10Y", value: "Not connected yet", source: "Not connected" },
-    { label: "Broad USD", value: "Not connected yet", source: "Not connected" },
-  ];
-  profile.sections = {
-    centralBank: section(
-      "Federal Reserve",
-      "Central Bank",
-      [
-        notConnectedMetric("us-policy", "Federal Funds Effective Rate"),
-        notConnectedMetric("us-balance", "Fed Balance Sheet"),
-        notConnectedMetric(
-          "us-policy-trend",
-          "Fed Policy Trend",
-          "Compared with three months earlier",
-        ),
-        notConnectedMetric(
-          "us-balance-trend",
-          "Balance Sheet Trend",
-          "Compared with three months earlier",
-        ),
-      ],
-    ),
-    inflation: section(
-      "US inflation pulse",
-      "Inflation",
-      [
-        notConnectedMetric("us-cpi", "US CPI YoY"),
-        notConnectedMetric("us-core-cpi", "US Core CPI YoY"),
-        notConnectedMetric("us-pce", "US PCE YoY"),
-        notConnectedMetric("us-core-pce", "US Core PCE YoY"),
-      ],
-    ),
-    labour: section(
-      "US labour market",
-      "Labour",
-      [
-        notConnectedMetric("us-nfp", "Nonfarm Payrolls Monthly Change"),
-        notConnectedMetric("us-unemployment", "Unemployment Rate"),
-        notConnectedMetric("us-claims", "Initial Jobless Claims"),
-        notConnectedMetric("us-wages", "Average Hourly Earnings YoY"),
-      ],
-    ),
-    growth: section(
-      "US growth & activity",
-      "Growth / Activity",
-      [
-        notConnectedMetric("us-gdp", "Real GDP Growth"),
-        notConnectedMetric("us-retail", "Retail Sales MoM"),
-        notConnectedMetric(
-          "us-industrial-production",
-          "Industrial Production YoY",
-        ),
-        notConnectedMetric("us-sentiment", "Consumer Sentiment"),
-      ],
-    ),
-    ratesMarkets: section(
-      "US rates & markets",
-      "Rates & Markets",
-      [
-        notConnectedMetric("us-1y", "US 1Y Treasury Yield"),
-        notConnectedMetric("us-5y", "US 5Y Treasury Yield"),
-        notConnectedMetric("us-10y", "US 10Y Treasury Yield"),
-        notConnectedMetric("us-dollar", "Nominal Broad US Dollar Index"),
-      ],
-    ),
-  };
+function notConnectedSnapshot(label: string): CountryMacroProfile["snapshot"][number] {
+  return { label, value: "Not connected yet", source: "Not connected" };
 }
 
 function markProfileAsComingSoon(profile: CountryMacroProfile) {
@@ -252,70 +153,6 @@ function markProfileAsComingSoon(profile: CountryMacroProfile) {
   }
 }
 
-function prepareEuroAreaProfile(profile: CountryMacroProfile) {
-  profile.tabLabel = "Euro Area";
-  profile.country = "Euro Area";
-  profile.centralBank = "European Central Bank";
-  profile.currency = "EUR";
-  profile.snapshot = [
-    { label: "ECB deposit", value: "Not connected yet", source: "Not connected" },
-    { label: "Main refinancing", value: "Not connected yet", source: "Not connected" },
-    { label: "HICP YoY", value: "Not connected yet", source: "Not connected" },
-    { label: "Core HICP YoY", value: "Not connected yet", source: "Not connected" },
-    { label: "Unemployment", value: "Not connected yet", source: "Not connected" },
-    { label: "Real GDP", value: "Not connected yet", source: "Not connected" },
-  ];
-  profile.sections = {
-    centralBank: section(
-      "European Central Bank",
-      "Central Bank",
-      [
-        notConnectedMetric("eu-deposit", "ECB Deposit Facility Rate"),
-        notConnectedMetric("eu-mro", "ECB Main Refinancing Operations Rate"),
-        notConnectedMetric("eu-marginal", "ECB Marginal Lending Facility Rate"),
-      ],
-    ),
-    inflation: section(
-      "Euro Area inflation",
-      "Inflation",
-      [
-        notConnectedMetric("eu-hicp", "Euro Area HICP YoY"),
-        notConnectedMetric("eu-core-hicp", "Euro Area Core HICP YoY"),
-      ],
-    ),
-    labour: section(
-      "Euro Area labour market",
-      "Labour",
-      [
-        notConnectedMetric("eu-unemployment", "Euro Area Unemployment Rate"),
-        notConnectedMetric("eu-youth-unemployment", "Euro Area Youth Unemployment Rate"),
-      ],
-    ),
-    growth: section(
-      "Euro Area growth",
-      "Growth / Activity",
-      [
-        notConnectedMetric("eu-gdp", "Euro Area Real GDP Growth QoQ"),
-        notConnectedMetric("eu-gdp-yoy", "Euro Area Real GDP Growth YoY"),
-      ],
-    ),
-    ratesMarkets: section(
-      "Euro Area rates & markets",
-      "Rates & Markets",
-      [
-        notConnectedMetric("eu-eurusd", "EUR/USD"),
-        notConnectedMetric("eu-de-1y", "Germany 1Y Bund Yield"),
-        notConnectedMetric("eu-de-5y", "Germany 5Y Bund Yield"),
-        notConnectedMetric("eu-de-10y", "Germany 10Y Bund Yield"),
-        notConnectedMetric("eu-fr-10y", "France 10Y Government Bond Yield"),
-        notConnectedMetric("eu-it-10y", "Italy 10Y Government Bond Yield"),
-        notConnectedMetric("eu-fr-de-spread", "France-Germany 10Y Spread"),
-        notConnectedMetric("eu-it-de-spread", "Italy-Germany 10Y Spread"),
-      ],
-    ),
-  };
-}
-
 const profiles: CountryMacroProfile[] = [];
 
 profiles.push({
@@ -325,107 +162,104 @@ profiles.push({
   countryCode: "US",
   centralBank: "Federal Reserve",
   currency: "USD",
-  policyRate: "4.50%",
-  nextMeeting: "30 Jul · demo placeholder",
-  stance: "Restrictive / data dependent",
-  stanceTone: "tight",
-  inflation: "2.9%",
-  unemployment: "4.1%",
-  marketProxy: "DXY 104.2",
+  policyRate: "Not connected yet",
+  nextMeeting: "Not connected yet",
+  stance: "Awaiting FRED sync",
+  stanceTone: "neutral",
+  inflation: "Not connected yet",
+  unemployment: "Not connected yet",
+  marketProxy: "Not connected yet",
   snapshot: [
-    { label: "Fed funds", value: "4.50%", change: "Hold" },
-    { label: "CPI YoY", value: "2.9%", change: "-0.1 pp" },
-    { label: "Unemployment", value: "4.1%", change: "+0.1 pp" },
-    { label: "GDP", value: "2.1%", change: "annualised" },
-    { label: "US 10Y", value: "4.35%", change: "+8 bp" },
-    { label: "DXY", value: "104.2", change: "+0.4%" },
+    notConnectedSnapshot("Fed funds"),
+    notConnectedSnapshot("CPI YoY"),
+    notConnectedSnapshot("Unemployment"),
+    notConnectedSnapshot("Real GDP"),
+    notConnectedSnapshot("US 10Y"),
+    notConnectedSnapshot("Broad USD"),
   ],
   sections: {
     centralBank: section("Federal Reserve", "Central Bank", [
-      metric("us-policy", "Policy Rate", "4.50%", 5.25, 4.5, "0 bp", "Target range midpoint proxy"),
-      metric("us-decision", "Previous Decision", "Hold", 80, 49, "Unchanged", "Demo hawkishness index"),
-      metric("us-balance", "Balance Sheet", "$7.2tn", 7.65, 7.2, "QT active", "Demo total-assets path"),
-      metric("us-guidance", "Market Direction", "Data dependent", 75, 49, "Less restrictive", "Demo policy-pressure index"),
+      notConnectedMetric("us-policy", "Federal Funds Effective Rate"),
+      notConnectedMetric("us-balance", "Fed Balance Sheet"),
+      notConnectedMetric("us-policy-trend", "Fed Policy Trend", "Compared with three months earlier"),
+      notConnectedMetric("us-balance-trend", "Balance Sheet Trend", "Compared with three months earlier"),
     ]),
     inflation: section("US inflation pulse", "Inflation", [
-      metric("us-cpi", "CPI YoY", "2.9%", 3.3, 2.9, "-0.1 pp"),
-      metric("us-core-cpi", "Core CPI", "3.2%", 4.1, 3.2, "-0.1 pp"),
-      metric("us-pce", "PCE", "2.6%", 3.1, 2.6, "-0.1 pp"),
-      metric("us-core-pce", "Core PCE", "2.8%", 3.7, 2.8, "Flat"),
+      notConnectedMetric("us-cpi", "US CPI YoY"),
+      notConnectedMetric("us-core-cpi", "US Core CPI YoY"),
+      notConnectedMetric("us-pce", "US PCE YoY"),
+      notConnectedMetric("us-core-pce", "US Core PCE YoY"),
     ]),
     labour: section("US labour market", "Labour", [
-      metric("us-nfp", "Nonfarm Payrolls", "+175k", 240, 175, "-6k"),
-      metric("us-unemployment", "Unemployment", "4.1%", 3.7, 4.1, "+0.1 pp"),
-      metric("us-claims", "Initial Claims", "232k", 218, 232, "+4k"),
-      metric("us-wages", "Average Hourly Earnings", "3.8%", 4.4, 3.8, "-0.1 pp"),
+      notConnectedMetric("us-nfp", "Nonfarm Payrolls Monthly Change"),
+      notConnectedMetric("us-unemployment", "Unemployment Rate"),
+      notConnectedMetric("us-claims", "Initial Jobless Claims"),
+      notConnectedMetric("us-wages", "Average Hourly Earnings YoY"),
     ]),
     growth: section("US growth & activity", "Growth / Activity", [
-      metric("us-gdp", "GDP Growth", "2.1%", 2.4, 2.1, "Stable"),
-      metric("us-retail", "Retail Sales", "1.4%", 2.2, 1.4, "+0.1 pp"),
-      metric("us-ism-mfg", "ISM Manufacturing", "49.5", 47.8, 49.5, "+0.5"),
-      metric("us-ism-services", "ISM Services", "52.1", 52.7, 52.1, "+0.2"),
-      metric("us-confidence", "Consumer Confidence", "101.0", 107, 101, "-1.0"),
+      notConnectedMetric("us-gdp", "Real GDP Growth"),
+      notConnectedMetric("us-retail", "Retail Sales MoM"),
+      notConnectedMetric("us-industrial-production", "Industrial Production YoY"),
+      notConnectedMetric("us-sentiment", "Consumer Sentiment"),
     ]),
     ratesMarkets: section("US rates & markets", "Rates & Markets", [
-      metric("us-1y", "US 1Y", "4.20%", 4.8, 4.2, "+3 bp"),
-      metric("us-5y", "US 5Y", "4.25%", 4.6, 4.25, "+5 bp"),
-      metric("us-10y", "US 10Y", "4.35%", 4.25, 4.35, "+8 bp"),
-      metric("us-dxy", "DXY", "104.2", 101.2, 104.2, "+0.4%"),
+      notConnectedMetric("us-1y", "US 1Y Treasury Yield"),
+      notConnectedMetric("us-5y", "US 5Y Treasury Yield"),
+      notConnectedMetric("us-10y", "US 10Y Treasury Yield"),
+      notConnectedMetric("us-dollar", "Nominal Broad US Dollar Index"),
     ]),
   },
 });
 
-removeUnitedStatesDemoData(profiles[0]);
-
 profiles.push({
   id: "eurozone",
-  tabLabel: "Eurozone",
-  country: "Eurozone",
+  tabLabel: "Euro Area",
+  country: "Euro Area",
   countryCode: "EU",
   centralBank: "European Central Bank",
   currency: "EUR",
-  policyRate: "2.00%",
-  nextMeeting: "24 Jul · demo placeholder",
-  stance: "Gradual easing",
-  stanceTone: "easing",
-  inflation: "2.2%",
-  unemployment: "6.4%",
-  marketProxy: "EUR/USD 1.09",
+  policyRate: "Not connected yet",
+  nextMeeting: "Coming soon",
+  stance: "Coming soon",
+  stanceTone: "neutral",
+  inflation: "Not connected yet",
+  unemployment: "Not connected yet",
+  marketProxy: "Not connected yet",
   snapshot: [
-    { label: "ECB deposit", value: "2.00%", change: "-25 bp" },
-    { label: "HICP YoY", value: "2.2%", change: "Flat" },
-    { label: "Unemployment", value: "6.4%", change: "Stable" },
-    { label: "GDP", value: "0.8%", change: "+0.1 pp" },
-    { label: "German 10Y", value: "2.45%", change: "+6 bp" },
-    { label: "EUR/USD", value: "1.09", change: "+0.3%" },
+    notConnectedSnapshot("ECB deposit"),
+    notConnectedSnapshot("Main refinancing"),
+    notConnectedSnapshot("HICP YoY"),
+    notConnectedSnapshot("Core HICP YoY"),
+    notConnectedSnapshot("Unemployment"),
+    notConnectedSnapshot("Real GDP"),
   ],
   sections: {
     centralBank: section("European Central Bank", "Central Bank", [
-      metric("eu-policy", "Deposit Rate", "2.00%", 3.75, 2, "-25 bp"),
-      metric("eu-decision", "Previous Decision", "Cut 25 bp", 80, 30, "Easing", "Demo hawkishness index"),
-      metric("eu-balance", "Balance Sheet", "€6.4tn", 6.85, 6.4, "Run-off"),
+      notConnectedMetric("eu-deposit", "ECB Deposit Facility Rate"),
+      notConnectedMetric("eu-mro", "ECB Main Refinancing Operations Rate"),
+      notConnectedMetric("eu-marginal", "ECB Marginal Lending Facility Rate"),
     ]),
-    inflation: section("Eurozone inflation pulse", "Inflation", [
-      metric("eu-hicp", "HICP YoY", "2.2%", 2.9, 2.2, "Flat"),
-      metric("eu-core", "Core HICP", "2.5%", 3.4, 2.5, "-0.1 pp"),
-      metric("eu-ppi", "Producer Prices", "-0.8%", -3.4, -0.8, "+0.1 pp"),
+    inflation: section("Euro Area inflation", "Inflation", [
+      notConnectedMetric("eu-hicp", "Euro Area HICP YoY"),
+      notConnectedMetric("eu-core-hicp", "Euro Area Core HICP YoY"),
     ]),
-    labour: section("Eurozone labour market", "Labour", [
-      metric("eu-unemployment", "Unemployment", "6.4%", 6.6, 6.4, "Stable"),
-      metric("eu-employment", "Employment Growth", "0.7%", 1.1, 0.7, "Stable"),
-      metric("eu-wages", "Negotiated Wages", "3.6%", 4.5, 3.6, "-0.1 pp"),
+    labour: section("Euro Area labour market", "Labour", [
+      notConnectedMetric("eu-unemployment", "Euro Area Unemployment Rate"),
+      notConnectedMetric("eu-youth-unemployment", "Euro Area Youth Unemployment Rate"),
     ]),
-    growth: section("Eurozone growth & activity", "Growth / Activity", [
-      metric("eu-gdp", "GDP Growth", "0.8%", 0.4, 0.8, "+0.1 pp"),
-      metric("eu-pmi-mfg", "Manufacturing PMI", "47.8", 44.2, 47.8, "+0.3"),
-      metric("eu-pmi-services", "Services PMI", "51.6", 50.4, 51.6, "+0.2"),
-      metric("eu-production", "Industrial Production", "-1.1%", -2.4, -1.1, "+0.1 pp"),
-      metric("eu-confidence", "Economic Sentiment", "96.4", 94.1, 96.4, "+0.1"),
+    growth: section("Euro Area growth", "Growth / Activity", [
+      notConnectedMetric("eu-gdp", "Euro Area Real GDP Growth QoQ"),
+      notConnectedMetric("eu-gdp-yoy", "Euro Area Real GDP Growth YoY"),
     ]),
-    ratesMarkets: section("Eurozone rates & markets", "Rates & Markets", [
-      metric("eu-2y", "German 2Y", "2.10%", 3.05, 2.1, "-5 bp"),
-      metric("eu-10y", "German 10Y", "2.45%", 2.38, 2.45, "+6 bp"),
-      metric("eu-fx", "EUR/USD", "1.09", 1.08, 1.09, "+0.3%"),
+    ratesMarkets: section("Euro Area rates & markets", "Rates & Markets", [
+      notConnectedMetric("eu-eurusd", "EUR/USD"),
+      notConnectedMetric("eu-de-1y", "Germany 1Y Bund Yield"),
+      notConnectedMetric("eu-de-5y", "Germany 5Y Bund Yield"),
+      notConnectedMetric("eu-de-10y", "Germany 10Y Bund Yield"),
+      notConnectedMetric("eu-fr-10y", "France 10Y Government Bond Yield"),
+      notConnectedMetric("eu-it-10y", "Italy 10Y Government Bond Yield"),
+      notConnectedMetric("eu-fr-de-spread", "France-Germany 10Y Spread"),
+      notConnectedMetric("eu-it-de-spread", "Italy-Germany 10Y Spread"),
     ]),
   },
 });
@@ -437,50 +271,40 @@ profiles.push({
   countryCode: "CH",
   centralBank: "Swiss National Bank",
   currency: "CHF",
-  policyRate: "0.25%",
-  nextMeeting: "25 Sep · demo placeholder",
-  stance: "Easing bias / FX aware",
-  stanceTone: "easing",
-  inflation: "1.1%",
-  unemployment: "2.8%",
-  marketProxy: "USD/CHF 0.89",
+  policyRate: "Not connected yet",
+  nextMeeting: "Coming soon",
+  stance: "Coming soon",
+  stanceTone: "neutral",
+  inflation: "Not connected yet",
+  unemployment: "Not connected yet",
+  marketProxy: "Not connected yet",
   snapshot: [
-    { label: "SNB rate", value: "0.25%", change: "Hold" },
-    { label: "CPI YoY", value: "1.1%", change: "-0.1 pp" },
-    { label: "Unemployment", value: "2.8%", change: "Stable" },
-    { label: "GDP", value: "1.4%", change: "+0.1 pp" },
-    { label: "Swiss 10Y", value: "0.55%", change: "+2 bp" },
-    { label: "USD/CHF", value: "0.89", change: "+0.2%" },
+    notConnectedSnapshot("SNB rate"),
+    notConnectedSnapshot("CPI YoY"),
+    notConnectedSnapshot("Unemployment"),
+    notConnectedSnapshot("GDP"),
+    notConnectedSnapshot("Swiss 10Y"),
+    notConnectedSnapshot("USD/CHF"),
   ],
   sections: {
     centralBank: section("Swiss National Bank", "Central Bank", [
-      metric("ch-policy", "Policy Rate", "0.25%", 1.75, 0.25, "0 bp"),
-      metric("ch-decision", "Previous Decision", "Hold", 70, 24, "Dovish", "Demo hawkishness index"),
-      metric("ch-fx-policy", "FX Assessment", "Franc monitored", 52, 72, "High sensitivity", "Demo intervention-sensitivity index"),
+      notConnectedMetric("ch-policy", "Policy Rate"),
     ]),
     inflation: section("Swiss inflation pulse", "Inflation", [
-      metric("ch-cpi", "CPI YoY", "1.1%", 1.7, 1.1, "-0.1 pp"),
-      metric("ch-core", "Core CPI", "0.9%", 1.5, 0.9, "Flat"),
-      metric("ch-import", "Imported Inflation", "-0.4%", 0.6, -0.4, "Flat"),
+      notConnectedMetric("ch-cpi", "CPI YoY"),
+      notConnectedMetric("ch-core", "Core CPI"),
     ]),
     labour: section("Swiss labour market", "Labour", [
-      metric("ch-unemployment", "Unemployment", "2.8%", 2.4, 2.8, "Stable"),
-      metric("ch-employment", "Employment Growth", "0.6%", 1.2, 0.6, "Stable"),
-      metric("ch-wages", "Nominal Wages", "1.7%", 1.4, 1.7, "Stable"),
+      notConnectedMetric("ch-unemployment", "Unemployment"),
     ]),
     growth: section("Swiss growth & activity", "Growth / Activity", [
-      metric("ch-gdp", "GDP Growth", "1.4%", 0.9, 1.4, "+0.1 pp"),
-      metric("ch-retail", "Retail Sales", "1.2%", 0.2, 1.2, "+0.2 pp"),
-      metric("ch-pmi", "Manufacturing PMI", "48.9", 44.9, 48.9, "+0.2"),
-      metric("ch-production", "Industrial Production", "0.5%", -1.2, 0.5, "+0.1 pp"),
-      metric("ch-confidence", "Consumer Confidence", "-31", -42, -31, "+1"),
+      notConnectedMetric("ch-gdp", "GDP Growth"),
     ]),
     ratesMarkets: section("Swiss rates & markets", "Rates & Markets", [
-      metric("ch-1y", "Swiss 1Y", "0.10%", 1.3, 0.1, "+1 bp"),
-      metric("ch-5y", "Swiss 5Y", "0.35%", 0.9, 0.35, "+2 bp"),
-      metric("ch-10y", "Swiss 10Y", "0.55%", 0.72, 0.55, "+2 bp"),
-      metric("ch-usd", "USD/CHF", "0.89", 0.87, 0.89, "+0.2%"),
-      metric("ch-eur", "EUR/CHF", "0.97", 0.95, 0.97, "+0.1%"),
+      notConnectedMetric("ch-1y", "Swiss 1Y"),
+      notConnectedMetric("ch-5y", "Swiss 5Y"),
+      notConnectedMetric("ch-10y", "Swiss 10Y"),
+      notConnectedMetric("ch-usd", "USD/CHF"),
     ]),
   },
 });
@@ -492,49 +316,38 @@ profiles.push({
   countryCode: "UK",
   centralBank: "Bank of England",
   currency: "GBP",
-  policyRate: "4.25%",
-  nextMeeting: "7 Aug · demo placeholder",
-  stance: "Cautious easing",
+  policyRate: "Not connected yet",
+  nextMeeting: "Coming soon",
+  stance: "Coming soon",
   stanceTone: "neutral",
-  inflation: "2.6%",
-  unemployment: "4.4%",
-  marketProxy: "GBP/USD 1.28",
+  inflation: "Not connected yet",
+  unemployment: "Not connected yet",
+  marketProxy: "Not connected yet",
   snapshot: [
-    { label: "Bank Rate", value: "4.25%", change: "Hold" },
-    { label: "CPI YoY", value: "2.6%", change: "-0.1 pp" },
-    { label: "Unemployment", value: "4.4%", change: "+0.1 pp" },
-    { label: "GDP", value: "1.1%", change: "+0.1 pp" },
-    { label: "UK 10Y", value: "4.45%", change: "+5 bp" },
-    { label: "GBP/USD", value: "1.28", change: "+0.2%" },
+    notConnectedSnapshot("Bank Rate"),
+    notConnectedSnapshot("CPI YoY"),
+    notConnectedSnapshot("Unemployment"),
+    notConnectedSnapshot("GDP"),
+    notConnectedSnapshot("UK 10Y"),
+    notConnectedSnapshot("GBP/USD"),
   ],
   sections: {
     centralBank: section("Bank of England", "Central Bank", [
-      metric("uk-policy", "Bank Rate", "4.25%", 5.25, 4.25, "0 bp"),
-      metric("uk-vote", "MPC Vote", "7–2 hold", 90, 43, "Split", "Demo hawkishness index"),
-      metric("uk-guidance", "Policy Direction", "Gradual cuts", 72, 38, "Easing bias"),
+      notConnectedMetric("uk-policy", "Bank Rate"),
     ]),
     inflation: section("UK inflation pulse", "Inflation", [
-      metric("uk-cpi", "CPI YoY", "2.6%", 4, 2.6, "-0.1 pp"),
-      metric("uk-core", "Core CPI", "3.4%", 5.1, 3.4, "-0.1 pp"),
-      metric("uk-services", "Services CPI", "4.9%", 6.5, 4.9, "-0.1 pp"),
+      notConnectedMetric("uk-cpi", "CPI YoY"),
     ]),
     labour: section("UK labour market", "Labour", [
-      metric("uk-unemployment", "Unemployment", "4.4%", 4, 4.4, "Stable"),
-      metric("uk-payrolls", "Payroll Change", "-18k", 24, -18, "-2k"),
-      metric("uk-wages", "Regular Pay", "5.2%", 7.1, 5.2, "-0.1 pp"),
+      notConnectedMetric("uk-unemployment", "Unemployment"),
     ]),
     growth: section("UK growth & activity", "Growth / Activity", [
-      metric("uk-gdp", "GDP Growth", "1.1%", 0.3, 1.1, "+0.1 pp"),
-      metric("uk-retail", "Retail Sales", "0.8%", -0.8, 0.8, "+0.1 pp"),
-      metric("uk-pmi-mfg", "Manufacturing PMI", "49.2", 46.8, 49.2, "+0.1"),
-      metric("uk-pmi-services", "Services PMI", "52.4", 50.8, 52.4, "+0.2"),
-      metric("uk-confidence", "Consumer Confidence", "-16", -28, -16, "+1"),
+      notConnectedMetric("uk-gdp", "GDP Growth"),
     ]),
     ratesMarkets: section("UK rates & markets", "Rates & Markets", [
-      metric("uk-2y", "UK 2Y", "4.10%", 4.8, 4.1, "-2 bp"),
-      metric("uk-5y", "UK 5Y", "4.30%", 4.9, 4.3, "-2 bp"),
-      metric("uk-10y", "UK 10Y", "4.45%", 4.28, 4.45, "+5 bp"),
-      metric("uk-fx", "GBP/USD", "1.28", 1.24, 1.28, "+0.2%"),
+      notConnectedMetric("uk-5y", "UK 5Y"),
+      notConnectedMetric("uk-10y", "UK 10Y"),
+      notConnectedMetric("uk-fx", "GBP/USD"),
     ]),
   },
 });
@@ -546,50 +359,39 @@ profiles.push({
   countryCode: "JP",
   centralBank: "Bank of Japan",
   currency: "JPY",
-  policyRate: "0.50%",
-  nextMeeting: "31 Jul · demo placeholder",
-  stance: "Gradual normalisation",
+  policyRate: "Not connected yet",
+  nextMeeting: "Coming soon",
+  stance: "Coming soon",
   stanceTone: "neutral",
-  inflation: "3.0%",
-  unemployment: "2.6%",
-  marketProxy: "USD/JPY 148.0",
+  inflation: "Not connected yet",
+  unemployment: "Not connected yet",
+  marketProxy: "Not connected yet",
   snapshot: [
-    { label: "BoJ rate", value: "0.50%", change: "Hold" },
-    { label: "CPI YoY", value: "3.0%", change: "+0.1 pp" },
-    { label: "Unemployment", value: "2.6%", change: "Stable" },
-    { label: "GDP", value: "0.7%", change: "+0.2 pp" },
-    { label: "JGB 10Y", value: "1.45%", change: "+7 bp" },
-    { label: "USD/JPY", value: "148.0", change: "-0.5%" },
+    notConnectedSnapshot("BoJ rate"),
+    notConnectedSnapshot("CPI YoY"),
+    notConnectedSnapshot("Unemployment"),
+    notConnectedSnapshot("GDP"),
+    notConnectedSnapshot("JGB 10Y"),
+    notConnectedSnapshot("USD/JPY"),
   ],
   sections: {
     centralBank: section("Bank of Japan", "Central Bank", [
-      metric("jp-policy", "Policy Rate", "0.50%", -0.1, 0.5, "0 bp"),
-      metric("jp-purchases", "JGB Purchases", "¥4.1tn / month", 5.7, 4.1, "Tapering"),
-      metric("jp-guidance", "Policy Direction", "Normalising", 20, 57, "Gradual", "Demo hawkishness index"),
+      notConnectedMetric("jp-policy", "Policy Rate"),
     ]),
     inflation: section("Japan inflation pulse", "Inflation", [
-      metric("jp-cpi", "CPI YoY", "3.0%", 2.8, 3, "+0.1 pp"),
-      metric("jp-core", "Core CPI", "2.7%", 2.6, 2.7, "Flat"),
-      metric("jp-tokyo", "Tokyo CPI", "2.9%", 2.5, 2.9, "+0.1 pp"),
+      notConnectedMetric("jp-cpi", "CPI YoY"),
     ]),
     labour: section("Japan labour market", "Labour", [
-      metric("jp-unemployment", "Unemployment", "2.6%", 2.5, 2.6, "Stable"),
-      metric("jp-employment", "Employment Growth", "0.4%", 0.2, 0.4, "Stable"),
-      metric("jp-wages", "Cash Earnings", "2.5%", 1.4, 2.5, "+0.1 pp"),
+      notConnectedMetric("jp-unemployment", "Unemployment"),
     ]),
     growth: section("Japan growth & activity", "Growth / Activity", [
-      metric("jp-gdp", "GDP Growth", "0.7%", -0.4, 0.7, "+0.2 pp"),
-      metric("jp-retail", "Retail Sales", "2.2%", 1, 2.2, "+0.1 pp"),
-      metric("jp-pmi", "Manufacturing PMI", "49.8", 48.2, 49.8, "+0.1"),
-      metric("jp-production", "Industrial Production", "-1.0%", -3.2, -1, "+0.2 pp"),
-      metric("jp-confidence", "Consumer Confidence", "36.8", 34.5, 36.8, "+0.2"),
+      notConnectedMetric("jp-gdp", "GDP Growth"),
     ]),
     ratesMarkets: section("Japan rates & markets", "Rates & Markets", [
-      metric("jp-1y", "JGB 1Y", "0.85%", 0.1, 0.85, "+3 bp"),
-      metric("jp-2y", "JGB 2Y", "0.70%", 0.25, 0.7, "+4 bp"),
-      metric("jp-5y", "JGB 5Y", "1.15%", 0.4, 1.15, "+5 bp"),
-      metric("jp-10y", "JGB 10Y", "1.45%", 0.88, 1.45, "+7 bp"),
-      metric("jp-fx", "USD/JPY", "148.0", 152, 148, "-0.5%"),
+      notConnectedMetric("jp-1y", "JGB 1Y"),
+      notConnectedMetric("jp-5y", "JGB 5Y"),
+      notConnectedMetric("jp-10y", "JGB 10Y"),
+      notConnectedMetric("jp-fx", "USD/JPY"),
     ]),
   },
 });
@@ -600,11 +402,4 @@ for (const profile of profiles) {
   }
 }
 
-const euroAreaProfile = profiles.find((profile) => profile.id === "eurozone");
-if (euroAreaProfile) {
-  prepareEuroAreaProfile(euroAreaProfile);
-}
-
 export const countryMacroProfiles = profiles;
-
-

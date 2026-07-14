@@ -98,7 +98,7 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
           <button
             type="button"
             onClick={() => tableRef.current?.requestFullscreen()}
-            className="rounded-md border border-[#37383b] bg-[#111214] px-2.5 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] text-[#89898b] hover:border-[#55565a] hover:text-white"
+            className="desk-button px-2.5 py-1.5 text-[10px] font-semibold"
           >
             Fullscreen
           </button>

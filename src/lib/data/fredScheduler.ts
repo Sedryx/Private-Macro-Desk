@@ -1,9 +1,10 @@
+import { syncEcbResearchDocuments } from "@/lib/data/ecbResearch";
 import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
 import { syncEuroAreaData } from "@/lib/data/euroAreaSync";
+import { syncFedResearchDocuments } from "@/lib/data/fedResearch";
 import { FRED_SERIES, syncFredSeries } from "@/lib/data/fred";
 import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
 import { syncGlobalSeries } from "@/lib/data/globalSync";
-import { syncSecResearchDocuments } from "@/lib/data/secResearch";
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const INITIAL_CHECK_DELAY_MS = 30 * 1000;
@@ -56,7 +57,7 @@ export function startFredScheduler() {
   state.timer = setInterval(checkAndSync, TWO_HOURS_MS);
   state.timer.unref();
   console.log("[Macro scheduler] Official Euro Area + US FRED sync enabled every 2 hours.");
-  console.log("[Research scheduler] SEC EDGAR sync enabled every 2 hours when SEC_USER_AGENT is configured.");
+  console.log("[Research scheduler] Fed + ECB monetary policy statement sync enabled every 2 hours.");
 }
 
 export async function syncMacroIfStale(force = false) {
@@ -124,23 +125,33 @@ export const syncFredIfStale = syncMacroIfStale;
 export async function syncResearchIfStale(force = false) {
   const { prisma } = await import("@/lib/prisma");
   const latestDocument = await prisma.researchDocument.findFirst({
-    where: { provider: "SEC EDGAR" },
+    where: { provider: { in: ["Fed", "ECB"] } },
     orderBy: { updatedAt: "desc" },
     select: { updatedAt: true },
   });
   const fresh = latestDocument !== null && Date.now() - latestDocument.updatedAt.getTime() < TWO_HOURS_MS;
 
   if (!force && fresh) {
-    console.log("[Research scheduler] SEC EDGAR documents are still fresh; sync skipped.");
+    console.log("[Research scheduler] Fed/ECB statements are still fresh; sync skipped.");
     return { status: "fresh" as const };
   }
 
-  console.log("[Research scheduler] Refreshing SEC EDGAR documents...");
-  const result = await syncSecResearchDocuments();
-  console.log(
-    `[Research scheduler] SEC EDGAR refresh ${result.status}: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`,
-  );
-  return result;
+  console.log("[Research scheduler] Refreshing Fed and ECB monetary policy statements...");
+  const [fed, ecb] = await Promise.all([
+    syncFedResearchDocuments().catch((error: unknown) => {
+      console.error("[Research scheduler] Fed sync failed:", errorMessage(error));
+      return null;
+    }),
+    syncEcbResearchDocuments().catch((error: unknown) => {
+      console.error("[Research scheduler] ECB sync failed:", errorMessage(error));
+      return null;
+    }),
+  ]);
+
+  if (fed) console.log(`[Research scheduler] Fed refresh: ${fed.created} created, ${fed.updated} updated.`);
+  if (ecb) console.log(`[Research scheduler] ECB refresh: ${ecb.created} created, ${ecb.updated} updated.`);
+
+  return { status: "synced" as const, fed, ecb };
 }
 
 function errorMessage(error: unknown) {

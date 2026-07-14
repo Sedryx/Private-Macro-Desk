@@ -1,4 +1,3 @@
-import { DataSourceStatusCards, type DataSourceStatus } from "@/components/settings/DataSourceStatusCards";
 import { SettingsForm } from "@/components/settings/SettingsForm";
 import { TraderSettingsList, type TraderSettingsUser } from "@/components/settings/TraderSettingsList";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -10,47 +9,14 @@ export const dynamic = "force-dynamic";
 
 async function getSettingsPageData() {
   try {
-    const [settings, users, macroStats, calendarStats, secStats] = await Promise.all([
+    const [settings, users] = await Promise.all([
       getOrCreateWorkspaceSettings(),
       prisma.user.findMany({ orderBy: { createdAt: "asc" }, select: { id: true, name: true, email: true, role: true } }),
-      prisma.macroValue.aggregate({ _count: { _all: true }, _max: { createdAt: true } }),
-      prisma.economicEvent.findFirst({
-        where: { OR: [{ provider: { not: null } }, { source: { not: null } }] },
-        orderBy: { updatedAt: "desc" },
-        select: { updatedAt: true, provider: true, source: true },
-      }),
-      prisma.researchDocument.findFirst({
-        where: { provider: { contains: "SEC" } },
-        orderBy: { updatedAt: "desc" },
-        select: { updatedAt: true, provider: true },
-      }),
     ]);
-
-    const sources: DataSourceStatus[] = [
-      {
-        name: "FRED / Macro",
-        connected: macroStats._count._all > 0,
-        detail: `${macroStats._count._all} macro values stored`,
-        latestSyncedAt: macroStats._max.createdAt?.toISOString() ?? null,
-      },
-      {
-        name: "Forex Factory",
-        connected: Boolean(calendarStats),
-        detail: calendarStats?.provider ?? calendarStats?.source ?? "No events synced yet",
-        latestSyncedAt: calendarStats?.updatedAt.toISOString() ?? null,
-      },
-      {
-        name: "SEC EDGAR",
-        connected: Boolean(secStats),
-        detail: secStats?.provider ?? "No official docs synced yet",
-        latestSyncedAt: secStats?.updatedAt.toISOString() ?? null,
-      },
-    ];
 
     return {
       settings,
       users: users.map((user): TraderSettingsUser => ({ ...user })),
-      sources,
     };
   } catch (error) {
     console.error("Unable to load settings", error);
@@ -78,10 +44,7 @@ export default async function SettingsPage() {
       ) : (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
           <SettingsForm settings={data.settings} />
-          <div className="space-y-5">
-            <TraderSettingsList users={data.users} language={language} />
-            <DataSourceStatusCards sources={data.sources} language={language} />
-          </div>
+          <TraderSettingsList users={data.users} language={language} />
         </div>
       )}
     </>
