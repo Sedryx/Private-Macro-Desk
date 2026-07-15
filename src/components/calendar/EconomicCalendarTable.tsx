@@ -2,7 +2,10 @@
 
 import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 
-import type { EconomicEventView } from "@/components/calendar/types";
+import { PriceReactionChart } from "@/components/calendar/PriceReactionChart";
+import type { EconomicEventView, EventPriceSeries } from "@/components/calendar/types";
+import { Sparkline } from "@/components/ui/Sparkline";
+import { parseComparableValue } from "@/lib/calendarValue";
 
 const ZURICH_TIME_ZONE = "Europe/Zurich";
 const impacts = ["HIGH", "MEDIUM", "LOW", "HOLIDAY"] as const;
@@ -11,7 +14,13 @@ type ImpactFilter = (typeof impacts)[number];
 type CurrencyFilter = (typeof currencies)[number];
 type RangeFilter = "today" | "tomorrow" | "this-week" | "next-week" | "previous-week" | "custom";
 
-export function EconomicCalendarTable({ events }: { events: EconomicEventView[] }) {
+export function EconomicCalendarTable({
+  events,
+  priceSeriesByCurrency,
+}: {
+  events: EconomicEventView[];
+  priceSeriesByCurrency: Record<string, EventPriceSeries>;
+}) {
   const [range, setRange] = useState<RangeFilter>("this-week");
   const [selectedImpacts, setSelectedImpacts] = useState<Set<ImpactFilter>>(
     () => new Set(impacts),
@@ -120,9 +129,8 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                 <Header className="w-full">Event</Header>
                 <Header>Impact</Header>
                 <Header>Actual</Header>
-                <Header>High</Header>
+                <Header>Trend</Header>
                 <Header>Forecast</Header>
-                <Header>Low</Header>
                 <Header>Previous</Header>
               </tr>
             </thead>
@@ -136,7 +144,7 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                   <Fragment key={event.id}>
                     {showDay ? (
                       <tr className="border-b border-[var(--line)] bg-[#111214]">
-                        <td colSpan={10} className="px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#829087]">
+                        <td colSpan={9} className="px-4 py-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#829087]">
                           {formatGroupDate(event.eventTime)}
                         </td>
                       </tr>
@@ -166,31 +174,55 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                       </Cell>
                       <Cell><ImpactBadge impact={event.impact} /></Cell>
                       <Cell>
-                        <span className={actualTone(event.actualValue, event.forecastValue, event.title)}>
-                          {event.actualValue || "—"}
+                        <span className="inline-flex items-center gap-1">
+                          <span className={actualTone(event.actualValue, event.forecastValue, event.title)}>
+                            {event.actualValue || "—"}
+                          </span>
+                          {event.actualSource ? <SourceBadge source={event.actualSource} /> : null}
                         </span>
                       </Cell>
-                      <Cell muted>—</Cell>
+                      <Cell><Sparkline values={event.history} /></Cell>
                       <Cell>{event.forecastValue || "—"}</Cell>
-                      <Cell muted>—</Cell>
                       <Cell>{event.previousValue || "—"}</Cell>
                     </tr>
                     {expanded ? (
                       <tr className="border-b border-[var(--line)] bg-[#0e1418]">
-                        <td colSpan={10} className="px-4 py-4">
+                        <td colSpan={9} className="px-4 py-4">
                           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                             <Detail label="Source" value={event.provider || event.source || "Forex Factory"} />
                             <Detail label="Previous" value={event.previousValue || "—"} />
                             <Detail label="Forecast" value={event.forecastValue || "—"} />
-                            <Detail label="Actual" value={event.actualValue || "—"} />
+                            <Detail
+                              label="Actual"
+                              value={event.actualValue || "—"}
+                              badge={event.actualSource ? <SourceBadge source={event.actualSource} /> : null}
+                            />
                           </div>
-                          <div className="mt-4 grid gap-3 border-t border-[var(--line)] pt-3 md:grid-cols-2">
-                            <p className="text-[9px] text-[#66716c]">
-                              Expected impact: {event.expectedImpact || "Not provided by Forex Factory"}
-                            </p>
-                            <p className="text-[9px] text-[#66716c] md:text-right">
-                              Historical chart coming later
-                            </p>
+                          <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-[var(--line)] pt-3">
+                            <div>
+                              <p className="text-[9px] text-[#66716c]">
+                                Expected impact: {event.expectedImpact || "Not provided by Forex Factory"}
+                              </p>
+                              {event.history.length >= 2 ? (
+                                <div className="mt-2 flex items-center gap-2">
+                                  <span className="text-[9px] text-[#66716c]">Last {event.history.length} releases</span>
+                                  <Sparkline values={event.history} width={90} height={22} />
+                                </div>
+                              ) : (
+                                <p className="mt-2 text-[9px] text-[#66716c]">Not enough history yet for a trend.</p>
+                              )}
+                            </div>
+                            {event.currency && priceSeriesByCurrency[event.currency] ? (
+                              <div className="w-full max-w-xs sm:w-72">
+                                <PriceReactionChart
+                                  pairLabel={priceSeriesByCurrency[event.currency].pairLabel}
+                                  points={priceSeriesByCurrency[event.currency].points}
+                                  eventTime={event.eventTime}
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-[9px] text-[#66716c]">No free FX price series tracked for {event.currency || "this currency"}.</p>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -274,8 +306,28 @@ function ImpactBadge({ impact }: { impact: EconomicEventView["impact"] }) {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[8px] uppercase tracking-[0.08em] text-[#56615c]">{label}</p><p className="mt-1 text-[10px] text-[#b8c0bb]">{value}</p></div>;
+function Detail({ label, value, badge }: { label: string; value: string; badge?: ReactNode }) {
+  return (
+    <div>
+      <p className="text-[8px] uppercase tracking-[0.08em] text-[#56615c]">{label}</p>
+      <p className="mt-1 flex items-center gap-1 text-[10px] text-[#b8c0bb]">
+        {value}
+        {badge}
+      </p>
+    </div>
+  );
+}
+
+function SourceBadge({ source }: { source: string }) {
+  const label = source === "FRED" ? "FRED-verified" : source === "AI" ? "AI-sourced" : source;
+  return (
+    <span
+      title={`Actual value cross-referenced from ${label}, since Forex Factory's free feed doesn't include it.`}
+      className="rounded border border-[#2a332e] bg-[#141b17] px-1 py-0.5 text-[6.5px] font-semibold uppercase tracking-[0.06em] text-[#7f9184]"
+    >
+      {source}
+    </span>
+  );
 }
 
 const LOWER_IS_BETTER = ["cpi", "inflation", "unemployment", "jobless claims", "ppi", "pce price"];
@@ -316,20 +368,6 @@ function actualTone(actual: string | null, forecast: string | null, title: strin
     : actualNumber > forecastNumber;
 
   return beat ? "font-semibold text-[var(--positive)]" : "font-semibold text-[var(--negative)]";
-}
-
-function parseComparableValue(value: string | null) {
-  if (!value) return null;
-  const match = value.replaceAll(",", "").match(/[-+]?\d*\.?\d+/);
-  if (!match) return null;
-  const parsed = Number(match[0]);
-  if (!Number.isFinite(parsed)) return null;
-  const suffix = value.toUpperCase();
-  if (suffix.includes("T")) return parsed * 1_000_000_000_000;
-  if (suffix.includes("B")) return parsed * 1_000_000_000;
-  if (suffix.includes("M")) return parsed * 1_000_000;
-  if (suffix.includes("K")) return parsed * 1_000;
-  return parsed;
 }
 
 function getRangeBounds(range: RangeFilter, customStart: string, customEnd: string) {

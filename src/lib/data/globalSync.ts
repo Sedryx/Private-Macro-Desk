@@ -65,11 +65,12 @@ async function syncDerivedSeries(config: DerivedGlobalSeriesConfig): Promise<Glo
     throw new Error(`Missing source series for ${config.code}: ${config.leftCode} or ${config.rightCode}.`);
   }
 
-  const rightByMonth = new Map(
-    right.values.map((value) => [value.date.toISOString().slice(0, 7), value.value.toNumber()]),
+  const matchKeyLength = config.frequency === "daily" ? 10 : 7;
+  const rightByPeriod = new Map(
+    right.values.map((value) => [value.date.toISOString().slice(0, matchKeyLength), value.value.toNumber()]),
   );
   const raw = left.values.flatMap((leftValue) => {
-    const rightValue = rightByMonth.get(leftValue.date.toISOString().slice(0, 7));
+    const rightValue = rightByPeriod.get(leftValue.date.toISOString().slice(0, matchKeyLength));
     if (rightValue === undefined) return [];
     return [{ date: leftValue.date, value: leftValue.value.toNumber() - rightValue }];
   });

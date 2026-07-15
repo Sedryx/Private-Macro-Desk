@@ -29,13 +29,21 @@ const regions: Array<{ value: string; label: string }> = [
   { value: "EU", label: "EU · ECB" },
 ];
 
+type SortOrder = "desc" | "asc";
+
 export function OfficialResearchDocumentList({ documents }: { documents: OfficialResearchDocumentItem[] }) {
   const [region, setRegion] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filteredDocuments = useMemo(
-    () => documents.filter((document) => region === "ALL" || document.country === region),
-    [documents, region],
-  );
+  const filteredDocuments = useMemo(() => {
+    const filtered = documents.filter((document) => region === "ALL" || document.country === region);
+    return [...filtered].sort((left, right) => {
+      const leftTime = left.filedAt ? new Date(left.filedAt).getTime() : 0;
+      const rightTime = right.filedAt ? new Date(right.filedAt).getTime() : 0;
+      return sortOrder === "desc" ? rightTime - leftTime : leftTime - rightTime;
+    });
+  }, [documents, region, sortOrder]);
 
   return (
     <section className="desk-surface overflow-hidden">
@@ -44,9 +52,18 @@ export function OfficialResearchDocumentList({ documents }: { documents: Officia
           <p className="terminal-label">Official documents</p>
           <h2 className="mt-2 text-[17px] font-semibold tracking-[-0.02em] text-[#e6eae7]">Central bank statements</h2>
         </div>
-        <select value={region} onChange={(event) => setRegion(event.target.value)} className="desk-field px-3 py-2 text-[11px] sm:w-44">
-          {regions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        <div className="flex items-center gap-2">
+          <select value={region} onChange={(event) => setRegion(event.target.value)} className="desk-field px-3 py-2 text-[11px] sm:w-44">
+            {regions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <button
+            type="button"
+            onClick={() => setSortOrder((order) => (order === "desc" ? "asc" : "desc"))}
+            className="desk-button whitespace-nowrap px-2.5 py-2 text-[10px] font-semibold"
+          >
+            Date {sortOrder === "desc" ? "↓ Newest" : "↑ Oldest"}
+          </button>
+        </div>
       </div>
 
       {documents.length === 0 ? (
@@ -61,62 +78,91 @@ export function OfficialResearchDocumentList({ documents }: { documents: Officia
         <div className="px-5 py-16 text-center text-[12px] text-[#78827e]">No documents for this region.</div>
       ) : (
         <div className="divide-y divide-[var(--line)]">
-          {filteredDocuments.map((document) => <DocumentRow key={document.id} document={document} />)}
+          {filteredDocuments.map((document) => (
+            <DocumentRow
+              key={document.id}
+              document={document}
+              expanded={expandedId === document.id}
+              onToggle={() => setExpandedId((current) => (current === document.id ? null : document.id))}
+            />
+          ))}
         </div>
       )}
     </section>
   );
 }
 
-function DocumentRow({ document }: { document: OfficialResearchDocumentItem }) {
+function DocumentRow({
+  document,
+  expanded,
+  onToggle,
+}: {
+  document: OfficialResearchDocumentItem;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
   const hasTakeaways = document.keyTakeaways.length > 0;
-  const [view, setView] = useState<"summary" | "takeaways">(hasTakeaways ? "takeaways" : "summary");
+  const [view, setView] = useState<"summary" | "takeaways">("summary");
 
   return (
-    <div className="group flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-6">
-      <span className="shrink-0 pt-0.5 font-mono text-[10px] text-[#6f7a74] sm:w-20">{formatDate(document.filedAt)}</span>
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <RegionTag country={document.country} />
-          {document.kind ? <span className="terminal-label text-[8px] text-[#77817d]">{document.kind}</span> : null}
-        </div>
-        {document.sourceUrl ? (
-          <a
-            href={document.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1.5 block text-[13px] font-semibold leading-5 text-[#e4e9e6] hover:text-white hover:underline"
-          >
-            {document.title}
-          </a>
-        ) : (
-          <p className="mt-1.5 text-[13px] font-semibold leading-5 text-[#e4e9e6]">{document.title}</p>
-        )}
-
-        {hasTakeaways ? (
-          <div className="mt-2 flex items-center gap-1">
-            <ToggleButton active={view === "takeaways"} onClick={() => setView("takeaways")}>
-              Key takeaways
-            </ToggleButton>
-            <ToggleButton active={view === "summary"} onClick={() => setView("summary")}>
-              Summary
-            </ToggleButton>
+    <div className="px-5 sm:px-6">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="flex w-full flex-col gap-2 py-4 text-left sm:flex-row sm:items-center sm:gap-4"
+      >
+        <span className="shrink-0 font-mono text-[10px] text-[#6f7a74] sm:w-20">{formatDate(document.filedAt)}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <RegionTag country={document.country} />
+            {document.kind ? <span className="terminal-label text-[8px] text-[#77817d]">{document.kind}</span> : null}
           </div>
-        ) : null}
+          <p className="mt-1.5 text-[13px] font-semibold leading-5 text-[#e4e9e6]">{document.title}</p>
+        </div>
+        <span className={`shrink-0 text-[10px] text-[#6f7a74] transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden>
+          ▾
+        </span>
+      </button>
 
-        {view === "takeaways" && hasTakeaways ? (
-          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[12px] leading-5 text-[#8d9792]">
-            {document.keyTakeaways.map((takeaway) => (
-              <li key={takeaway}>{takeaway}</li>
-            ))}
-          </ul>
-        ) : document.summary ? (
-          <p className="mt-1.5 text-[12px] leading-5 text-[#8d9792]">{document.summary}</p>
-        ) : null}
-      </div>
-      <div className="shrink-0 opacity-0 transition group-hover:opacity-100">
-        <RemoveLocalResearchCopyButton documentId={document.id} title={document.title} />
-      </div>
+      {expanded ? (
+        <div className="pb-4 sm:pl-24">
+          {hasTakeaways ? (
+            <div className="mb-2 flex items-center gap-1">
+              <ToggleButton active={view === "summary"} onClick={() => setView("summary")}>Summary</ToggleButton>
+              <ToggleButton active={view === "takeaways"} onClick={() => setView("takeaways")}>Key takeaways</ToggleButton>
+            </div>
+          ) : null}
+
+          {view === "takeaways" && hasTakeaways ? (
+            <ul className="list-disc space-y-1 pl-4 text-[12px] leading-5 text-[#8d9792]">
+              {document.keyTakeaways.map((takeaway) => (
+                <li key={takeaway}>{takeaway}</li>
+              ))}
+            </ul>
+          ) : document.summary ? (
+            <p className="text-[12px] leading-5 text-[#8d9792]">{document.summary}</p>
+          ) : (
+            <p className="text-[12px] text-[#5f6965]">No summary available.</p>
+          )}
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            {document.sourceUrl ? (
+              <a
+                href={document.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] font-semibold text-[#9db89b] transition hover:text-white hover:underline"
+              >
+                View source document ↗
+              </a>
+            ) : (
+              <span />
+            )}
+            <RemoveLocalResearchCopyButton documentId={document.id} title={document.title} />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

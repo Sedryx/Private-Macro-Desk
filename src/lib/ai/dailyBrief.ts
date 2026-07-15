@@ -1,7 +1,7 @@
 import { generateStructuredJson } from "@/lib/ai/gemini";
 
 const ZURICH_TIME_ZONE = "Europe/Zurich";
-const MODEL_LABEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL_LABEL = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
 const MAX_STATEMENT_CHARS = 12_000;
 const MAX_EVENTS = 25;
 

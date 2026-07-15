@@ -226,6 +226,7 @@ model EconomicEvent {
   previousValue String?
   forecastValue String?
   actualValue   String?
+  actualSource  String?
   expectedImpact String?
   source        String?
   createdAt     DateTime        @default(now())

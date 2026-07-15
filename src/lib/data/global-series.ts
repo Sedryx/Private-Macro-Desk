@@ -15,7 +15,7 @@ export type GlobalProvider =
   | "MOF"
   | "Calculated";
 
-export type GlobalCountry = "CH" | "UK" | "JP" | "EU";
+export type GlobalCountry = "CH" | "UK" | "JP" | "EU" | "US";
 export type GlobalFrequency = "daily" | "monthly" | "quarterly";
 export type GlobalValueKind =
   | "rate"
@@ -645,4 +645,22 @@ export const OFFICIAL_GLOBAL_SERIES: OfficialGlobalSeriesConfig[] = [
     valueKind: "spread",
     transform: "DIRECT",
     ui: ui("ratesMarkets", "eu-it-de-spread", "percent", "bp", "IT-DE spread", undefined, 2),
-  },];
+  },
+  {
+    provider: "Calculated",
+    code: "US_2Y10Y_CURVE",
+    name: "US 2Y10Y Treasury Curve",
+    category: MacroCategory.RATES,
+    country: "US",
+    unit: "pp",
+    formula: "SUBTRACT",
+    leftCode: "US10Y",
+    rightCode: "US2Y",
+    sourceUrl: "Calculated from FRED DGS10 minus DGS2",
+    maxAgeDays: 10,
+    frequency: "daily",
+    valueKind: "spread",
+    transform: "DIRECT",
+    ui: ui("ratesMarkets", "us-2y10y", "percent", "bp", "US 2Y10Y Curve", undefined, 2),
+  },
+];

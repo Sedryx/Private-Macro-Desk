@@ -8,14 +8,12 @@ export type DistributionItem = {
 
 export function DeskVisuals({
   tradeStatuses,
-  watchlistBiases,
   openRiskTotal,
   largestOpenRisk,
   openTradeCount,
   sizedOpenTradeCount,
 }: {
   tradeStatuses: DistributionItem[];
-  watchlistBiases: DistributionItem[];
   openRiskTotal: number;
   largestOpenRisk: number;
   openTradeCount: number;
@@ -24,7 +22,6 @@ export function DeskVisuals({
   return (
     <>
       <DistributionCard eyebrow="Journal" title="Trade Status Distribution" items={tradeStatuses} />
-      <DistributionCard eyebrow="Watchlist" title="Watchlist Bias Distribution" items={watchlistBiases} />
       <article className="desk-surface p-4">
         <div className="flex items-start justify-between gap-4">
           <div>

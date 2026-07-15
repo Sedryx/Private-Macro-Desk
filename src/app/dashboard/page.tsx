@@ -3,16 +3,15 @@ import { TradeStatus } from "@prisma/client";
 import { CalendarBriefingWidget } from "@/components/dashboard/CalendarBriefingWidget";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { DeskVisuals, type DistributionItem } from "@/components/dashboard/DeskVisuals";
-import { MacroPulseCard } from "@/components/dashboard/MacroPulseCard";
 import { MacroSnapshotWidget } from "@/components/dashboard/MacroSnapshotWidget";
 import { PreTradeChecklist } from "@/components/dashboard/PreTradeChecklist";
 import { TodayFocusCard } from "@/components/dashboard/TodayFocusCard";
 import { TradeDeskSnapshot, type RecentTradeNote, type TradeDeskItem } from "@/components/dashboard/TradeDeskSnapshot";
 import { WatchlistSnapshot, type WatchlistSnapshotItem } from "@/components/dashboard/WatchlistSnapshot";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { getLatestDailyBrief } from "@/lib/ai/dailyBrief";
 import {
   addDays,
-  buildMacroPulse,
   getTodayTomorrowKeys,
   getZurichDateKey,
   sortBriefingEvents,
@@ -44,7 +43,7 @@ async function getDashboardData() {
     const now = new Date();
     const { todayKey, tomorrowKey } = getTodayTomorrowKeys(now);
 
-    const [watchlists, tradeStatusRows, recentTrades, recentNotes, openTrades, economicEvents, macroIndicators] = await Promise.all([
+    const [watchlists, tradeStatusRows, recentTrades, recentNotes, openTrades, economicEvents, macroIndicators, dailyBrief] = await Promise.all([
       prisma.watchlist.findMany({
         where: {
           user: { role: "OWNER" },
@@ -129,6 +128,7 @@ async function getDashboardData() {
           },
         },
       }),
+      getLatestDailyBrief(),
     ]);
 
     const tradeCounts = {
@@ -162,16 +162,6 @@ async function getDashboardData() {
         importantLevel: item.importantLevel,
         notes: item.notes,
       }));
-
-    const biasCounts = { BULLISH: 0, BEARISH: 0, NEUTRAL: 0, NOT_SET: 0 };
-
-    uniqueWatchlistItems.forEach((item) => {
-      if (item.bias) {
-        biasCounts[item.bias] += 1;
-      } else {
-        biasCounts.NOT_SET += 1;
-      }
-    });
 
     const tradeItems: TradeDeskItem[] = recentTrades.map((trade) => ({
       id: trade.id,
@@ -237,24 +227,11 @@ async function getDashboardData() {
       buildMacroSnapshotItem(definition.code, definition.label),
     );
 
-    const macroPulse = buildMacroPulse([
-      ...macroSnapshot,
-      buildMacroSnapshotItem("US1Y", "US 1Y"),
-      buildMacroSnapshotItem("US2Y", "US 2Y"),
-    ]);
-
     const tradeStatuses: DistributionItem[] = [
       { label: "Planned", value: tradeCounts.PLANNED, color: "bg-[#a3a3a3]" },
       { label: "Open", value: tradeCounts.OPEN, color: "bg-[var(--positive)]" },
       { label: "Closed", value: tradeCounts.CLOSED, color: "bg-[#737373]" },
       { label: "Cancelled", value: tradeCounts.CANCELLED, color: "bg-[var(--negative)]" },
-    ];
-
-    const watchlistBiases: DistributionItem[] = [
-      { label: "Bullish", value: biasCounts.BULLISH, color: "bg-[var(--positive)]" },
-      { label: "Bearish", value: biasCounts.BEARISH, color: "bg-[var(--negative)]" },
-      { label: "Neutral", value: biasCounts.NEUTRAL, color: "bg-[#a3a3a3]" },
-      { label: "Not set", value: biasCounts.NOT_SET, color: "bg-[#525252]" },
     ];
 
     return {
@@ -277,7 +254,6 @@ async function getDashboardData() {
       tradeItems,
       noteItems,
       tradeStatuses,
-      watchlistBiases,
       openTradeCount: openTrades.length,
       sizedOpenTradeCount: openRiskValues.length,
       openRiskTotal: openRiskValues.reduce((sum, value) => sum + value, 0),
@@ -286,7 +262,7 @@ async function getDashboardData() {
       todayKey,
       tomorrowKey,
       macroSnapshot,
-      macroPulse,
+      dailyBrief,
     };
   } catch (error) {
     console.error("Unable to load dashboard data", error);
@@ -331,7 +307,7 @@ export default async function DashboardPage() {
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
             <CalendarBriefingWidget events={data.calendarEvents} todayKey={data.todayKey} tomorrowKey={data.tomorrowKey} />
-            <TodayFocusCard />
+            <TodayFocusCard brief={data.dailyBrief} />
           </div>
 
           <MacroSnapshotWidget items={data.macroSnapshot} />
@@ -351,13 +327,11 @@ export default async function DashboardPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <DeskVisuals
                 tradeStatuses={data.tradeStatuses}
-                watchlistBiases={data.watchlistBiases}
                 openRiskTotal={data.openRiskTotal}
                 largestOpenRisk={data.largestOpenRisk}
                 openTradeCount={data.openTradeCount}
                 sizedOpenTradeCount={data.sizedOpenTradeCount}
               />
-              <MacroPulseCard pulse={data.macroPulse} />
             </div>
           </section>
 

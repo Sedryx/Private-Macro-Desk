@@ -24,7 +24,7 @@ Create a `.env` file (see `prisma/schema.prisma` for the datasource) with:
 | `AUTH_SECRET` | Yes | Random string used to sign session tokens |
 | `FRED_API_KEY` | Yes | Free key from [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) — powers US data, the currency volatility chart, plus fallback for the Euro Area |
 | `GEMINI_API_KEY` | No | Free key from [Google AI Studio](https://aistudio.google.com/apikey) — powers the AI daily macro brief and Research key takeaways. Without it, those features render an empty state instead of breaking. |
-| `GEMINI_MODEL` | No | Defaults to `gemini-2.5-flash` |
+| `GEMINI_MODEL` | No | Defaults to `gemini-3.1-flash-lite`. Google periodically retires free-tier models for new API keys — if the daily brief starts logging a 404 "no longer available" error, run `npx tsx -e` against `ai.models.list()` (or check [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models)) and set this to a current flash-tier model. |
 | `FOREX_FACTORY_CALENDAR_URL` | No | Defaults to the public weekly calendar feed |
 | `SEC_USER_AGENT` | No | Only needed for the optional, manual SEC EDGAR sync (`npm run data:research:sec`) — not used by the default research sync |
 | `SEC_RESEARCH_TICKERS` / `SEC_RESEARCH_FORMS` / `SEC_RESEARCH_LIMIT_PER_TICKER` | No | Tune the optional SEC EDGAR sync scope |
@@ -53,6 +53,34 @@ All yield sources above are free official APIs — none require a paid subscript
 
 - **UK 1Y and France 1Y/5Y have no free source at all.** The BoE and DMO only publish 5Y/10Y/20Y headline gilt yields; Banque de France discontinued its free OAT yield feed in July 2024 and the AFT site is not scrapable. A paid market-data vendor (Bloomberg, Refinitiv, ICE) would be required to fill these two gaps.
 - **Switzerland's 1Y/5Y/10Y yields are effectively frozen.** The SNB's free `rendoblid` cube has not been updated since **July 2025** — every chart for these three series will show one clustered batch of history and then go flat. This is an upstream SNB data-portal limitation, not a bug in this app. A paid feed (again Bloomberg/Refinitiv/ICE, or a dedicated Swiss market-data provider) is the only way to get a live, complete Swiss yield curve.
+
+### Economic calendar "Actual" column
+
+Forex Factory's free `ff_calendar_thisweek.json` export never includes an `actual` field at all — verified
+directly against the live feed, it only ever carries `title`/`country`/`date`/`impact`/`forecast`/`previous`, even
+for releases from the day before. That export is a schedule/forecast feed, not a live results feed, and there is no
+free tier of a proper results API.
+
+To avoid a permanently empty Actual column for the releases that matter most, `syncForexFactoryCalendar()` also
+cross-references a list of marquee US releases (CPI y/y & m/m, Core CPI y/y & m/m, PPI Final Demand m/m, Core PPI
+Final Demand m/m, Retail Sales, Initial Claims, Unemployment Rate, Non-Farm Payrolls, UoM Consumer Sentiment)
+against the real values already synced from FRED, matching by release rank rather than date math. Only mappings
+with a clean 1:1 release cadence are included — GDP is deliberately excluded, since Forex Factory carries 2-3
+releases per quarter (advance/second/third estimate) against a single FRED quarterly figure, which would
+misattribute the value to the wrong release. Backfilled values carry a small `FRED` badge in the calendar so it's
+clear they're cross-referenced rather than natively provided. Everything else (other currencies, housing data,
+regional surveys, speeches) stays blank, since there is no free, correctly-scoped source for it — an AI-grounded
+lookup (Gemini's Google Search tool) was evaluated for wider coverage but currently requires a billing-enabled
+Google Cloud project even to stay within the free quota, so it isn't wired in. The sparkline "Trend" column on the
+calendar reads from this same backfilled data, so it fills in gradually as more weeks of history accumulate.
+
+### Event price reaction chart
+
+Expanding a calendar event also shows a small daily price chart for the event's currency (the relevant FX pair
+against USD, or the broad Dollar Index for USD events), covering roughly 5 days before and after the release, with
+a marker on the event date. This reuses the same FRED FX data that powers the currency volatility chart on the
+Macro tab — a true intraday/tick-level reaction chart around the exact release time is not available from any free
+data source (would require a paid vendor such as Bloomberg, Refinitiv, or OANDA).
 
 A background scheduler refreshes all of the above every 2 hours once the app server starts (`src/instrumentation.ts`). Data can also be refreshed on demand:
 

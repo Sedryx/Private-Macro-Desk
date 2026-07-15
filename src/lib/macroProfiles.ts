@@ -204,8 +204,10 @@ profiles.push({
     ]),
     ratesMarkets: section("US rates & markets", "Rates & Markets", [
       notConnectedMetric("us-1y", "US 1Y Treasury Yield"),
+      notConnectedMetric("us-2y", "US 2Y Treasury Yield"),
       notConnectedMetric("us-5y", "US 5Y Treasury Yield"),
       notConnectedMetric("us-10y", "US 10Y Treasury Yield"),
+      notConnectedMetric("us-2y10y", "US 2Y10Y Curve"),
       notConnectedMetric("us-dollar", "Nominal Broad US Dollar Index"),
     ]),
   },

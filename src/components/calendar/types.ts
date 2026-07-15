@@ -12,6 +12,11 @@ export type EconomicEventView = {
   previousValue: string | null;
   forecastValue: string | null;
   actualValue: string | null;
+  actualSource: string | null;
   expectedImpact: string | null;
   source: string | null;
+  history: number[];
 };
+
+export type PricePoint = { date: string; value: number };
+export type EventPriceSeries = { pairLabel: string; points: PricePoint[] };

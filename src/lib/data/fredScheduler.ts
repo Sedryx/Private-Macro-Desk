@@ -3,6 +3,7 @@ import { syncEcbResearchDocuments } from "@/lib/data/ecbResearch";
 import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
 import { syncEuroAreaData } from "@/lib/data/euroAreaSync";
 import { syncFedResearchDocuments } from "@/lib/data/fedResearch";
+import { syncForexFactoryCalendar } from "@/lib/data/forex-factory";
 import { FRED_SERIES, syncFredSeries } from "@/lib/data/fred";
 import { FX_VOLATILITY_SERIES } from "@/lib/data/fxVolatility";
 import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
@@ -24,6 +25,7 @@ type SchedulerState = {
   running?: Promise<unknown>;
   researchRunning?: Promise<unknown>;
   briefRunning?: Promise<unknown>;
+  calendarRunning?: Promise<unknown>;
 };
 
 const globalForMacroScheduler = globalThis as typeof globalThis & {
@@ -67,6 +69,21 @@ export function startFredScheduler() {
           state.briefRunning = undefined;
         });
     }
+
+    if (!state.calendarRunning) {
+      state.calendarRunning = syncForexFactoryCalendar()
+        .then((result) => {
+          console.log(
+            `[Calendar scheduler] ${result.created} created, ${result.updated} updated, ${result.skipped} skipped, ${result.deleted} deleted, ${result.backfilled} actuals backfilled from FRED.`,
+          );
+        })
+        .catch((error: unknown) => {
+          console.error("[Calendar scheduler] Sync failed:", errorMessage(error));
+        })
+        .finally(() => {
+          state.calendarRunning = undefined;
+        });
+    }
   };
 
   state.initialCheck = setTimeout(checkAndSync, INITIAL_CHECK_DELAY_MS);
@@ -76,6 +93,7 @@ export function startFredScheduler() {
   console.log("[Macro scheduler] Official Euro Area + US FRED sync enabled every 2 hours.");
   console.log("[Research scheduler] Fed + ECB monetary policy statement sync enabled every 2 hours.");
   console.log("[Daily brief] AI macro briefing generation checked every 2 hours (once/day).");
+  console.log("[Calendar scheduler] Forex Factory calendar sync enabled every 2 hours.");
 }
 
 export async function syncMacroIfStale(force = false) {

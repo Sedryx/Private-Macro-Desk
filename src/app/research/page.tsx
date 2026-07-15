@@ -8,7 +8,7 @@ async function getOfficialResearchDocuments() {
   try {
     const documents = await prisma.researchDocument.findMany({
       where: {
-        provider: { not: null },
+        provider: { in: ["Fed", "ECB"] },
       },
       orderBy: [{ filedAt: "desc" }, { createdAt: "desc" }],
       select: {

@@ -30,20 +30,6 @@ export type MacroSnapshotItem = {
   deltaUnit: "bp" | "pp" | "value";
 };
 
-export type MacroPulse = {
-  ratesPressure: string;
-  inflationPulse: string;
-  laborPulse: string;
-  usdPressure: string;
-};
-
-export type TodayFocusInput = {
-  events: CalendarBriefingEvent[];
-  openRiskTotal: number;
-  openTradeCount: number;
-  plannedTrades: number;
-};
-
 export function getZurichDateKey(date: Date) {
   return zurichDateFormatter.format(date);
 }
@@ -79,52 +65,6 @@ export function sortBriefingEvents(events: CalendarBriefingEvent[]) {
   });
 }
 
-export function buildMacroPulse(items: MacroSnapshotItem[]): MacroPulse {
-  const byCode = new Map(items.map((item) => [item.code, item]));
-
-  const ratesAnchor = byCode.get("US10Y");
-  const frontEndAnchor = byCode.get("US1Y") ?? byCode.get("US2Y");
-  const inflation = byCode.get("US_CPI_YOY");
-  const labor = byCode.get("US_UNEMPLOYMENT");
-  const usd = byCode.get("US_DOLLAR_BROAD_INDEX");
-
-  return {
-    ratesPressure: describeRatesPressure(ratesAnchor, frontEndAnchor),
-    inflationPulse: describeDelta(inflation, "Cooling", "Heating", 0.05),
-    laborPulse: describeDelta(labor, "Tightening", "Softening", 0.05),
-    usdPressure: describeDelta(usd, "Softer USD", "Stronger USD", 0.15),
-  };
-}
-
-export function buildTodayFocus({
-  events,
-  openRiskTotal,
-  openTradeCount,
-  plannedTrades,
-}: TodayFocusInput) {
-  const highImpactEvents = events.filter((event) => event.importance === "HIGH");
-  const focus: string[] = [];
-
-  if (highImpactEvents.length > 0) {
-    const visibleTitles = highImpactEvents.slice(0, 3).map((event) => event.title).join(", ");
-    focus.push(`${highImpactEvents.length} high impact event${highImpactEvents.length > 1 ? "s" : ""}: ${visibleTitles}`);
-  }
-
-  if (openTradeCount > 0) {
-    focus.push(`${openTradeCount} open trade${openTradeCount > 1 ? "s" : ""}, approx. ${formatCompactPercent(openRiskTotal)} open risk.`);
-  }
-
-  if (plannedTrades > 0) {
-    focus.push(`${plannedTrades} planned trade${plannedTrades > 1 ? "s" : ""} waiting for validation.`);
-  }
-
-  if (focus.length === 0) {
-    focus.push("Quiet desk: no high impact event, no open risk and no planned trade flagged.");
-  }
-
-  return focus;
-}
-
 export function formatMacroValue(item: MacroSnapshotItem) {
   if (item.value === null) return "Not connected";
 
@@ -145,29 +85,3 @@ export function formatMacroDelta(item: MacroSnapshotItem) {
   return `${sign}${item.delta.toFixed(2)}`;
 }
 
-function describeRatesPressure(longEnd: MacroSnapshotItem | undefined, frontEnd: MacroSnapshotItem | undefined) {
-  if (!longEnd?.delta && longEnd?.delta !== 0) return "Not connected";
-
-  const longMove = longEnd.delta;
-  const frontMove = frontEnd?.delta ?? null;
-
-  if (longMove > 0.03 || (frontMove !== null && frontMove > 0.03)) return "Rising yields";
-  if (longMove < -0.03 || (frontMove !== null && frontMove < -0.03)) return "Falling yields";
-  return "Stable yields";
-}
-
-function describeDelta(
-  item: MacroSnapshotItem | undefined,
-  lowerLabel: string,
-  higherLabel: string,
-  threshold: number,
-) {
-  if (!item?.delta && item?.delta !== 0) return "Not connected";
-  if (item.delta > threshold) return higherLabel;
-  if (item.delta < -threshold) return lowerLabel;
-  return "Stable";
-}
-
-function formatCompactPercent(value: number) {
-  return `${new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 }).format(value)}%`;
-}
