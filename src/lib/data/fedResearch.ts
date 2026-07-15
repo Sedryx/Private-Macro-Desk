@@ -1,5 +1,7 @@
 import { DocumentType } from "@prisma/client";
 
+import { syncDocumentChunkAndTakeaways } from "@/lib/data/researchChunks";
+
 const USER_AGENT = "Private Macro Desk/1.0 private research app";
 const provider = "Fed";
 const ownerEmail = "joachim@private-macro-desk.local";
@@ -18,6 +20,7 @@ type NormalizedStatement = {
   filedAt: Date;
   title: string;
   summary: string;
+  fullText: string;
 };
 
 export async function syncFedResearchDocuments(): Promise<FedResearchSyncResult> {
@@ -34,8 +37,9 @@ export async function syncFedResearchDocuments(): Promise<FedResearchSyncResult>
     if (!statement) continue;
 
     const result = await upsertDocument(statement, uploadedById);
-    if (result === "created") created += 1;
-    if (result === "updated") updated += 1;
+    if (result.status === "created") created += 1;
+    if (result.status === "updated") updated += 1;
+    await syncDocumentChunkAndTakeaways(result.id, result.status, statement.title, statement.fullText);
   }
 
   return { status: "synced", created, updated };
@@ -66,6 +70,7 @@ async function fetchStatement(code: string, sourceUrl: string): Promise<Normaliz
     filedAt: parseCode(code),
     title: `FOMC Statement — ${formatDate(parseCode(code))}`,
     summary: summarize(text),
+    fullText: text,
   };
 }
 
@@ -96,7 +101,7 @@ async function upsertDocument(statement: NormalizedStatement, uploadedById: stri
     select: { id: true },
   });
 
-  await prisma.researchDocument.upsert({
+  const document = await prisma.researchDocument.upsert({
     where: { provider_externalId: { provider, externalId: statement.externalId } },
     create: {
       externalId: statement.externalId,
@@ -121,9 +126,10 @@ async function upsertDocument(statement: NormalizedStatement, uploadedById: stri
       title: statement.title,
       source: provider,
     },
+    select: { id: true },
   });
 
-  return existing ? "updated" : "created";
+  return { id: document.id, status: existing ? ("updated" as const) : ("created" as const) };
 }
 
 async function getSyncUserId() {

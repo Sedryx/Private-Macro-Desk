@@ -1,3 +1,5 @@
+import { ProbabilityBar } from "@/components/ui/ProbabilityBar";
+
 export type DistributionItem = {
   label: string;
   value: number;
@@ -83,12 +85,7 @@ function DistributionCard({
         {items.map((item) => (
           <div key={item.label} className="grid grid-cols-[72px_minmax(0,1fr)_24px] items-center gap-3">
             <span className="text-[9px] font-medium text-[#7f8984]">{item.label}</span>
-            <div className="h-1.5 overflow-hidden rounded-sm bg-[#292a2c]">
-              <div
-                className={`h-full rounded-full ${item.color}`}
-                style={{ width: item.value === 0 ? "0%" : `${Math.max((item.value / maximum) * 100, 8)}%` }}
-              />
-            </div>
+            <ProbabilityBar value={item.value} max={maximum} colorClass={item.color} />
             <span className="text-right text-[10px] font-semibold text-[#aab2ae]">{item.value}</span>
           </div>
         ))}

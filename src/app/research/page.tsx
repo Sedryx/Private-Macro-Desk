@@ -21,6 +21,7 @@ async function getOfficialResearchDocuments() {
         sourceUrl: true,
         fileUrl: true,
         summary: true,
+        keyTakeaways: true,
       },
     });
 
@@ -33,6 +34,7 @@ async function getOfficialResearchDocuments() {
       country: document.country,
       sourceUrl: document.sourceUrl ?? document.fileUrl,
       summary: document.summary,
+      keyTakeaways: document.keyTakeaways,
     }));
   } catch (error) {
     console.error("Unable to load official research documents", error);

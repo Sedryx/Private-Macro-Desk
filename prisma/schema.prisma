@@ -251,6 +251,7 @@ model ResearchDocument {
   importance   String?
   category     String?
   summary      String?
+  keyTakeaways String[]        @default([])
   title        String
   type         DocumentType
   source       String?
@@ -279,6 +280,21 @@ model ResearchChunk {
   document   ResearchDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
+}
+
+model DailyMacroBrief {
+  id                 String   @id @default(cuid())
+  date               DateTime @unique
+  recap              String
+  drivers            Json
+  scenarios          Json
+  riskSentimentScore Int
+  sourceDocumentIds  String[] @default([])
+  sourceEventCount   Int      @default(0)
+  model              String
+  generatedAt        DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model WorkspaceSettings {

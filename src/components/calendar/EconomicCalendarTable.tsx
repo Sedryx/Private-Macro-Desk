@@ -166,7 +166,7 @@ export function EconomicCalendarTable({ events }: { events: EconomicEventView[] 
                       </Cell>
                       <Cell><ImpactBadge impact={event.impact} /></Cell>
                       <Cell>
-                        <span className={actualTone(event.actualValue, event.forecastValue)}>
+                        <span className={actualTone(event.actualValue, event.forecastValue, event.title)}>
                           {event.actualValue || "—"}
                         </span>
                       </Cell>
@@ -260,28 +260,62 @@ function Cell({ children, muted = false, strong = false }: { children: ReactNode
 
 function ImpactBadge({ impact }: { impact: EconomicEventView["impact"] }) {
   const style = impact === "HIGH"
-    ? "border-[#7f1d1d] bg-[var(--negative-soft)] text-[#f87171]"
+    ? { border: "border-[#7f1d1d]", bg: "bg-[var(--negative-soft)]", text: "text-[#f87171]", dot: "bg-[#f87171]" }
     : impact === "MEDIUM"
-      ? "border-[#5b4a2e] bg-[#241e14] text-[#c3a46b]"
+      ? { border: "border-[#5b4a2e]", bg: "bg-[#241e14]", text: "text-[#c3a46b]", dot: "bg-[#c3a46b]" }
       : impact === "HOLIDAY"
-        ? "border-[#3b4650] bg-[#171e24] text-[#91a2ae]"
-        : "border-[#353638] bg-[#171819] text-[#8d8d8f]";
-  return <span className={`rounded-full border px-1.5 py-0.5 text-[7px] font-semibold ${style}`}>{formatLabel(impact)}</span>;
+        ? { border: "border-[#3b4650]", bg: "bg-[#171e24]", text: "text-[#91a2ae]", dot: "bg-[#91a2ae]" }
+        : { border: "border-[#353638]", bg: "bg-[#171819]", text: "text-[#8d8d8f]", dot: "bg-[#8d8d8f]" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] font-semibold ${style.border} ${style.bg} ${style.text}`}>
+      <span className={`h-1 w-1 rounded-full ${style.dot}`} />
+      {formatLabel(impact)}
+    </span>
+  );
 }
 
 function Detail({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[8px] uppercase tracking-[0.08em] text-[#56615c]">{label}</p><p className="mt-1 text-[10px] text-[#b8c0bb]">{value}</p></div>;
 }
 
-function actualTone(actual: string | null, forecast: string | null) {
+const LOWER_IS_BETTER = ["cpi", "inflation", "unemployment", "jobless claims", "ppi", "pce price"];
+const HIGHER_IS_BETTER = [
+  "gdp",
+  "pmi",
+  "retail sales",
+  "payrolls",
+  "nfp",
+  "ism",
+  "consumer confidence",
+  "consumer sentiment",
+  "industrial production",
+  "durable goods",
+  "housing starts",
+  "building permits",
+];
+
+function indicatorDirection(title: string): "higher_better" | "lower_better" | "neutral" {
+  const lowered = title.toLowerCase();
+  if (LOWER_IS_BETTER.some((keyword) => lowered.includes(keyword))) return "lower_better";
+  if (HIGHER_IS_BETTER.some((keyword) => lowered.includes(keyword))) return "higher_better";
+  return "neutral";
+}
+
+function actualTone(actual: string | null, forecast: string | null, title: string) {
   const actualNumber = parseComparableValue(actual);
   const forecastNumber = parseComparableValue(forecast);
   if (actualNumber === null || forecastNumber === null || actualNumber === forecastNumber) {
     return "font-semibold text-[#d4d4d4]";
   }
-  return actualNumber > forecastNumber
-    ? "font-semibold text-[var(--positive)]"
-    : "font-semibold text-[var(--negative)]";
+
+  const direction = indicatorDirection(title);
+  if (direction === "neutral") return "font-semibold text-[#d4d4d4]";
+
+  const beat = direction === "lower_better"
+    ? actualNumber < forecastNumber
+    : actualNumber > forecastNumber;
+
+  return beat ? "font-semibold text-[var(--positive)]" : "font-semibold text-[var(--negative)]";
 }
 
 function parseComparableValue(value: string | null) {

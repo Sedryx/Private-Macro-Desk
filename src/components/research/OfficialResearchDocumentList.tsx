@@ -13,6 +13,7 @@ export type OfficialResearchDocumentItem = {
   country: string | null;
   sourceUrl: string | null;
   summary: string | null;
+  keyTakeaways: string[];
 };
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -68,6 +69,9 @@ export function OfficialResearchDocumentList({ documents }: { documents: Officia
 }
 
 function DocumentRow({ document }: { document: OfficialResearchDocumentItem }) {
+  const hasTakeaways = document.keyTakeaways.length > 0;
+  const [view, setView] = useState<"summary" | "takeaways">(hasTakeaways ? "takeaways" : "summary");
+
   return (
     <div className="group flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-6">
       <span className="shrink-0 pt-0.5 font-mono text-[10px] text-[#6f7a74] sm:w-20">{formatDate(document.filedAt)}</span>
@@ -88,12 +92,56 @@ function DocumentRow({ document }: { document: OfficialResearchDocumentItem }) {
         ) : (
           <p className="mt-1.5 text-[13px] font-semibold leading-5 text-[#e4e9e6]">{document.title}</p>
         )}
-        {document.summary ? <p className="mt-1.5 text-[12px] leading-5 text-[#8d9792]">{document.summary}</p> : null}
+
+        {hasTakeaways ? (
+          <div className="mt-2 flex items-center gap-1">
+            <ToggleButton active={view === "takeaways"} onClick={() => setView("takeaways")}>
+              Key takeaways
+            </ToggleButton>
+            <ToggleButton active={view === "summary"} onClick={() => setView("summary")}>
+              Summary
+            </ToggleButton>
+          </div>
+        ) : null}
+
+        {view === "takeaways" && hasTakeaways ? (
+          <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[12px] leading-5 text-[#8d9792]">
+            {document.keyTakeaways.map((takeaway) => (
+              <li key={takeaway}>{takeaway}</li>
+            ))}
+          </ul>
+        ) : document.summary ? (
+          <p className="mt-1.5 text-[12px] leading-5 text-[#8d9792]">{document.summary}</p>
+        ) : null}
       </div>
       <div className="shrink-0 opacity-0 transition group-hover:opacity-100">
         <RemoveLocalResearchCopyButton documentId={document.id} title={document.title} />
       </div>
     </div>
+  );
+}
+
+function ToggleButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.06em] transition ${
+        active
+          ? "border-[#3a4b41] bg-[#152019] text-[#a9dcb8]"
+          : "border-[#2a2c2e] bg-transparent text-[#6f7a74] hover:text-[#9aa49f]"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 

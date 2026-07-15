@@ -5,12 +5,18 @@ import { useState } from "react";
 import { CountryMacroProfileView } from "@/components/macro/CountryMacroProfile";
 import { CountrySelector } from "@/components/macro/CountrySelector";
 import { GlobalMacroOverview } from "@/components/macro/GlobalMacroOverview";
+import type { DailyMacroBriefView } from "@/lib/ai/dailyBrief";
+import type { CurrencyVolatilitySeries } from "@/lib/data/currencyVolatility.server";
 import type { CountryMacroProfile } from "@/lib/macroProfiles";
 
 export function MacroCommandCenter({
   profiles,
+  dailyBrief,
+  currencySeries,
 }: {
   profiles: CountryMacroProfile[];
+  dailyBrief: DailyMacroBriefView | null;
+  currencySeries: CurrencyVolatilitySeries[];
 }) {
   const [activeId, setActiveId] = useState("united-states");
   const activeProfile = profiles.find((profile) => profile.id === activeId);
@@ -31,7 +37,7 @@ export function MacroCommandCenter({
       </header>
 
       {activeId === "global" ? (
-        <GlobalMacroOverview profiles={profiles} />
+        <GlobalMacroOverview profiles={profiles} dailyBrief={dailyBrief} currencySeries={currencySeries} />
       ) : activeProfile ? (
         <CountryMacroProfileView
           key={activeProfile.id}

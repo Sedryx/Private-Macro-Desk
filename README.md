@@ -14,13 +14,17 @@ npx prisma db seed
 npm run auth:set-password -- <email> <password>
 ```
 
+If the app starts against a completely empty database (no seed run yet), it auto-creates two default accounts on first boot so you can log in immediately: `user1` / `user1` (owner) and `user2` / `user2` (member). Rename them from Settings once you're in — see the account migration note below.
+
 Create a `.env` file (see `prisma/schema.prisma` for the datasource) with:
 
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | `postgresql://postgres:postgres@localhost:5432/private_macro_desk` for the default docker-compose setup |
 | `AUTH_SECRET` | Yes | Random string used to sign session tokens |
-| `FRED_API_KEY` | Yes | Free key from [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) — powers US data plus fallback for the Euro Area |
+| `FRED_API_KEY` | Yes | Free key from [fred.stlouisfed.org](https://fred.stlouisfed.org/docs/api/api_key.html) — powers US data, the currency volatility chart, plus fallback for the Euro Area |
+| `GEMINI_API_KEY` | No | Free key from [Google AI Studio](https://aistudio.google.com/apikey) — powers the AI daily macro brief and Research key takeaways. Without it, those features render an empty state instead of breaking. |
+| `GEMINI_MODEL` | No | Defaults to `gemini-2.5-flash` |
 | `FOREX_FACTORY_CALENDAR_URL` | No | Defaults to the public weekly calendar feed |
 | `SEC_USER_AGENT` | No | Only needed for the optional, manual SEC EDGAR sync (`npm run data:research:sec`) — not used by the default research sync |
 | `SEC_RESEARCH_TICKERS` / `SEC_RESEARCH_FORMS` / `SEC_RESEARCH_LIMIT_PER_TICKER` | No | Tune the optional SEC EDGAR sync scope |
@@ -56,13 +60,28 @@ A background scheduler refreshes all of the above every 2 hours once the app ser
 npm run data:fred            # US FRED series only
 npm run data:macro           # US + Euro Area
 npm run data:macro:global    # Switzerland, UK, Japan, and the extra Euro Area yields
+npm run data:fx              # 8-currency FX series for the volatility chart (FRED, free)
 npm run data:macro:verify    # read-only health check against the DB
 npm run data:calendar        # Forex Factory economic calendar
 npm run data:research        # Fed + ECB monetary policy statements
 npm run data:research:fed    # Fed statements only
 npm run data:research:ecb    # ECB statements only
 npm run data:research:sec    # optional: SEC EDGAR company filings (requires SEC_USER_AGENT)
+npm run data:ai:brief        # generate today's AI macro brief (requires GEMINI_API_KEY)
 ```
+
+## AI features (optional)
+
+Set `GEMINI_API_KEY` (free tier, see above) to enable two Gemini-powered features. Both fail gracefully to an
+empty state if the key is missing or a call fails — nothing else in the app depends on them.
+
+- **Daily macro brief** — once a day, grounded only in the latest real Fed/ECB statement text and this week's
+  economic calendar, Gemini writes a short recap, 2–3 weighted drivers, a base/bull/bear scenario breakdown, and a
+  risk-sentiment score. Shown on the Macro overview tab, labelled "AI take" with the generation timestamp. Runs on
+  the same 2-hour scheduler tick as everything else, but only actually calls the model once per day.
+- **Research key takeaways** — when a new Fed or ECB statement is synced, Gemini extracts 3–6 bullet takeaways from
+  the full statement text (stored in `ResearchChunk`). Only runs on newly created documents, not on every refresh,
+  to keep API usage low. Falls back to the existing mechanical summary if unset.
 
 ## Language
 

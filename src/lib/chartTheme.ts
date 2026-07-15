@@ -12,4 +12,15 @@ export const chartTheme = {
     border: "#343538",
     text: "#f2f2f2",
   },
+  // Currency/series identity only — never reuse for gain/loss or comparison semantics.
+  categorical: [
+    "#3987e5",
+    "#199e70",
+    "#c98500",
+    "#008300",
+    "#9085e9",
+    "#e66767",
+    "#d55181",
+    "#d95926",
+  ],
 } as const;

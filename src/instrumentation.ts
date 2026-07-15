@@ -6,6 +6,9 @@ export async function register() {
     return;
   }
 
+  const { ensureDefaultUsers } = await import("@/lib/auth/bootstrap");
+  await ensureDefaultUsers();
+
   const { startFredScheduler } = await import("@/lib/data/fredScheduler");
   startFredScheduler();
 }
