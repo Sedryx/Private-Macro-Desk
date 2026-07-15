@@ -57,6 +57,13 @@ export type SettingsCopy = {
     saveError: string;
     emailChangeWarning: string;
     confirmPasswordLabel: string;
+    changePasswordTitle: string;
+    changePasswordButton: string;
+    newPasswordLabel: string;
+    confirmNewPasswordLabel: string;
+    passwordTooShort: string;
+    passwordMismatch: string;
+    passwordChangeSuccess: string;
   };
 };
 
@@ -114,6 +121,13 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
       saveError: "Trader could not be saved.",
       emailChangeWarning: "Changing the email creates a new account with the same password, moves all data over, then deletes the old one.",
       confirmPasswordLabel: "Confirm with password",
+      changePasswordTitle: "Change password",
+      changePasswordButton: "Update password",
+      newPasswordLabel: "New password",
+      confirmNewPasswordLabel: "Confirm new password",
+      passwordTooShort: "Password must be at least 4 characters.",
+      passwordMismatch: "New password and confirmation don't match.",
+      passwordChangeSuccess: "Password updated.",
     },
   },
   fr: {
@@ -169,6 +183,13 @@ const settingsCopy: Record<Locale, SettingsCopy> = {
       saveError: "Impossible de sauvegarder le trader.",
       emailChangeWarning: "Changer l'email crée un nouveau compte avec le même mot de passe, transfère toutes les données, puis supprime l'ancien.",
       confirmPasswordLabel: "Confirmer avec le mot de passe",
+      changePasswordTitle: "Changer le mot de passe",
+      changePasswordButton: "Mettre à jour le mot de passe",
+      newPasswordLabel: "Nouveau mot de passe",
+      confirmNewPasswordLabel: "Confirmer le nouveau mot de passe",
+      passwordTooShort: "Le mot de passe doit contenir au moins 4 caractères.",
+      passwordMismatch: "Le nouveau mot de passe et sa confirmation ne correspondent pas.",
+      passwordChangeSuccess: "Mot de passe mis à jour.",
     },
   },
 };

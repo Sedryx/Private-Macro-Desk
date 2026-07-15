@@ -18,7 +18,7 @@ export function MacroCommandCenter({
   dailyBrief: DailyMacroBriefView | null;
   currencySeries: CurrencyVolatilitySeries[];
 }) {
-  const [activeId, setActiveId] = useState("united-states");
+  const [activeId, setActiveId] = useState("global");
   const activeProfile = profiles.find((profile) => profile.id === activeId);
   return (
     <div className="space-y-3">

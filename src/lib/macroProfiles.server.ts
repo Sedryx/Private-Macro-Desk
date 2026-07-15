@@ -8,6 +8,7 @@ import {
   type MacroDisplayKind,
 } from "@/lib/data/macroRegions";
 import { OFFICIAL_EURO_AREA_SERIES } from "@/lib/data/euroAreaConfig";
+import { FOREX_FACTORY_PROVIDER } from "@/lib/data/forex-factory";
 import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
 import {
   countryMacroProfiles,
@@ -103,8 +104,10 @@ export async function getMacroProfiles(): Promise<CountryMacroProfile[]> {
       );
     }
 
-    applyUnitedStatesTrends(profiles, loadedSeries);
-    markConnectedRegions(profiles);
+    const trendedProfileIds = applyPolicyRateTrends(profiles, loadedSeries);
+    applyBalanceSheetTrend(profiles, loadedSeries);
+    markConnectedRegions(profiles, trendedProfileIds);
+    await applyNextMeetingDates(profiles);
     return profiles;
   } catch (error) {
     console.error("Unable to load macro values from PostgreSQL", error);
@@ -166,7 +169,54 @@ function hydrateMetric(
   }
 }
 
-function applyUnitedStatesTrends(
+// One policy-rate series per region, all already synced (FRED for US, FRED-fallback-or-ECB for the
+// Euro Area, SNB/BoE/BoJ direct for the rest) — reused here to derive a real "rates rising/falling"
+// trend instead of leaving every non-US region's central bank stance permanently unset.
+const REGION_POLICY_RATE_SERIES: Record<string, string> = {
+  "united-states": "FEDFUNDS",
+  eurozone: "ECB_DEPOSIT_RATE",
+  switzerland: "CH_POLICY_RATE",
+  "united-kingdom": "UK_POLICY_RATE",
+  japan: "JP_POLICY_RATE",
+};
+const REGION_POLICY_TREND_METRIC: Record<string, string> = {
+  "united-states": "us-policy-trend",
+  eurozone: "eu-policy-trend",
+  switzerland: "ch-policy-trend",
+  "united-kingdom": "uk-policy-trend",
+  japan: "jp-policy-trend",
+};
+
+function applyPolicyRateTrends(
+  profiles: CountryMacroProfile[],
+  loadedSeries: Map<string, SeriesPoint[]>,
+): Set<string> {
+  const trendedProfileIds = new Set<string>();
+
+  for (const profile of profiles) {
+    const seriesCode = REGION_POLICY_RATE_SERIES[profile.id];
+    const metricId = REGION_POLICY_TREND_METRIC[profile.id];
+    if (!seriesCode || !metricId) continue;
+
+    applyThreeMonthTrend(profile, loadedSeries.get(seriesCode), metricId, "Tightening", "Easing");
+
+    const policyTrend = profile.sections.centralBank.indicators.find((metric) => metric.id === metricId);
+    if (policyTrend?.source === "FRED / calculated") {
+      profile.stance = `${policyTrend.value} policy trend`;
+      profile.stanceTone =
+        policyTrend.value === "Tightening"
+          ? "tight"
+          : policyTrend.value === "Easing"
+            ? "easing"
+            : "neutral";
+      trendedProfileIds.add(profile.id);
+    }
+  }
+
+  return trendedProfileIds;
+}
+
+function applyBalanceSheetTrend(
   profiles: CountryMacroProfile[],
   loadedSeries: Map<string, SeriesPoint[]>,
 ) {
@@ -175,37 +225,54 @@ function applyUnitedStatesTrends(
 
   applyThreeMonthTrend(
     usProfile,
-    loadedSeries.get("FEDFUNDS"),
-    "us-policy-trend",
-    "Tightening",
-    "Easing",
-  );
-  applyThreeMonthTrend(
-    usProfile,
     loadedSeries.get("FED_BALANCE_SHEET"),
     "us-balance-trend",
     "Expanding",
     "Shrinking",
   );
+}
 
-  const policyTrend = usProfile.sections.centralBank.indicators.find(
-    (metric) => metric.id === "us-policy-trend",
-  );
-  if (policyTrend?.source === "FRED / calculated") {
-    usProfile.stance = `${policyTrend.value} policy trend`;
-    usProfile.stanceTone =
-      policyTrend.value === "Tightening"
-        ? "tight"
-        : policyTrend.value === "Easing"
-          ? "easing"
-          : "neutral";
+// Forex Factory's free feed only ever exposes "this week" (verified live — no next-week/next-month
+// export exists), so this only finds a date when the decision happens to fall within the currently
+// synced window. That's a real limitation of the free data source, not a bug: coverage improves on
+// its own as each central bank's meeting week comes around and gets synced. Title patterns below are
+// Forex Factory's typical naming for the headline rate-decision event per currency.
+const REGION_CENTRAL_BANK_EVENT: Record<string, { currency: string; matches: (lowerTitle: string) => boolean }> = {
+  "united-states": {
+    currency: "USD",
+    matches: (title) => (title.includes("fomc") && title.includes("statement")) || title === "federal funds rate",
+  },
+  eurozone: {
+    currency: "EUR",
+    matches: (title) => title.includes("ecb press conference") || title === "main refinancing rate",
+  },
+  switzerland: { currency: "CHF", matches: (title) => title.includes("snb policy rate") },
+  "united-kingdom": { currency: "GBP", matches: (title) => title === "official bank rate" },
+  japan: { currency: "JPY", matches: (title) => title.includes("boj policy rate") },
+};
+
+async function applyNextMeetingDates(profiles: CountryMacroProfile[]) {
+  const upcoming = await prisma.economicEvent.findMany({
+    where: { provider: FOREX_FACTORY_PROVIDER, eventTime: { gte: new Date() } },
+    orderBy: { eventTime: "asc" },
+    select: { title: true, currency: true, eventTime: true },
+  });
+
+  for (const [profileId, matcher] of Object.entries(REGION_CENTRAL_BANK_EVENT)) {
+    const profile = profiles.find((item) => item.id === profileId);
+    if (!profile) continue;
+
+    const match = upcoming.find(
+      (event) => event.currency === matcher.currency && matcher.matches(event.title.trim().toLowerCase()),
+    );
+    profile.nextMeeting = match ? formatDate(match.eventTime) : "No confirmed date in synced calendar";
   }
 }
 
-function markConnectedRegions(profiles: CountryMacroProfile[]) {
+function markConnectedRegions(profiles: CountryMacroProfile[], trendedProfileIds: Set<string>) {
   for (const region of MACRO_REGION_CONFIGS) {
     const profile = profiles.find((item) => item.id === region.profileId);
-    if (!profile || region.profileId === "united-states") continue;
+    if (!profile || trendedProfileIds.has(region.profileId)) continue;
 
     const allMetrics = Object.values(profile.sections).flatMap((section) => section.indicators);
     const connectedMetrics = allMetrics.filter((metric) => isLiveSource(metric.source));

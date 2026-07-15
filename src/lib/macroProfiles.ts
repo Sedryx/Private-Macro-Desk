@@ -240,6 +240,7 @@ profiles.push({
       notConnectedMetric("eu-deposit", "ECB Deposit Facility Rate"),
       notConnectedMetric("eu-mro", "ECB Main Refinancing Operations Rate"),
       notConnectedMetric("eu-marginal", "ECB Marginal Lending Facility Rate"),
+      notConnectedMetric("eu-policy-trend", "ECB Policy Trend", "Compared with three months earlier"),
     ]),
     inflation: section("Euro Area inflation", "Inflation", [
       notConnectedMetric("eu-hicp", "Euro Area HICP YoY"),
@@ -291,6 +292,7 @@ profiles.push({
   sections: {
     centralBank: section("Swiss National Bank", "Central Bank", [
       notConnectedMetric("ch-policy", "Policy Rate"),
+      notConnectedMetric("ch-policy-trend", "SNB Policy Trend", "Compared with three months earlier"),
     ]),
     inflation: section("Swiss inflation pulse", "Inflation", [
       notConnectedMetric("ch-cpi", "CPI YoY"),
@@ -336,6 +338,7 @@ profiles.push({
   sections: {
     centralBank: section("Bank of England", "Central Bank", [
       notConnectedMetric("uk-policy", "Bank Rate"),
+      notConnectedMetric("uk-policy-trend", "BoE Policy Trend", "Compared with three months earlier"),
     ]),
     inflation: section("UK inflation pulse", "Inflation", [
       notConnectedMetric("uk-cpi", "CPI YoY"),
@@ -379,6 +382,7 @@ profiles.push({
   sections: {
     centralBank: section("Bank of Japan", "Central Bank", [
       notConnectedMetric("jp-policy", "Policy Rate"),
+      notConnectedMetric("jp-policy-trend", "BoJ Policy Trend", "Compared with three months earlier"),
     ]),
     inflation: section("Japan inflation pulse", "Inflation", [
       notConnectedMetric("jp-cpi", "CPI YoY"),

@@ -54,6 +54,19 @@ All yield sources above are free official APIs — none require a paid subscript
 - **UK 1Y and France 1Y/5Y have no free source at all.** The BoE and DMO only publish 5Y/10Y/20Y headline gilt yields; Banque de France discontinued its free OAT yield feed in July 2024 and the AFT site is not scrapable. A paid market-data vendor (Bloomberg, Refinitiv, ICE) would be required to fill these two gaps.
 - **Switzerland's 1Y/5Y/10Y yields are effectively frozen.** The SNB's free `rendoblid` cube has not been updated since **July 2025** — every chart for these three series will show one clustered batch of history and then go flat. This is an upstream SNB data-portal limitation, not a bug in this app. A paid feed (again Bloomberg/Refinitiv/ICE, or a dedicated Swiss market-data provider) is the only way to get a live, complete Swiss yield curve.
 
+### Central bank stance and next meeting
+
+Each region's central bank card shows a "policy trend" badge (Tightening / Easing / Flat), calculated by comparing
+the latest policy rate to its value three months earlier — a factual read of the recent trend, not a predictive
+"hawkish/dovish" judgement call. If a region's policy rate hasn't updated recently (e.g. Switzerland's SNB feed,
+frozen since July 2025 — see above), it falls back to a data-health badge instead of asserting a trend from stale
+data.
+
+"Next meeting" is looked up from the same synced Forex Factory calendar used for the Actual column. This is a real
+limitation worth knowing: Forex Factory's free feed only ever exposes the current week (verified — no next-week or
+next-month export exists for free), so this only shows a date when the region's decision happens to fall within the
+week that's currently synced. The rest of the time it honestly says so rather than guessing.
+
 ### Economic calendar "Actual" column
 
 Forex Factory's free `ff_calendar_thisweek.json` export never includes an `actual` field at all — verified
@@ -120,4 +133,12 @@ The Settings tab is fully translated (EN/FR) via a shared dictionary (`src/lib/i
 ```bash
 npm run lint
 npm run build
+npm run test
 ```
+
+## Security notes
+
+- Login is rate-limited: 5 failed attempts for a given email locks it out for 15 minutes (in-memory, resets on
+  server restart — fine for a two-user private app, not meant to survive a multi-instance deployment).
+- Passwords can be changed from Settings (per-trader, or by the OWNER for either account) without needing shell
+  access to the server. `npm run auth:set-password` still works as a fallback if a password is ever fully lost.

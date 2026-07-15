@@ -7,6 +7,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint .",
+        "test": "vitest run",
         "data:fred": "tsx scripts/sync-fred.ts",
         "data:macro": "tsx scripts/sync-macro.ts",
         "data:macro:global": "tsx scripts/sync-global-macro.ts",
@@ -46,6 +47,7 @@
         "prisma": "^7.8.0",
         "tailwindcss": "latest",
         "tsx": "^4.23.0",
-        "typescript": "latest"
+        "typescript": "latest",
+        "vitest": "^4.1.10"
     }
 }

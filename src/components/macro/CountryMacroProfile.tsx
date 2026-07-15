@@ -90,8 +90,19 @@ export function CountryMacroProfileView({
     <div className="space-y-3">
       <section className="desk-surface overflow-hidden">
         <div className="border-b border-[var(--line)] px-4 py-3">
-          <p className="terminal-label">{profile.countryCode} / {profile.currency}</p>
-          <h2 className="mt-1 text-[18px] font-semibold text-[#f1f1f1]">{profile.country}</h2>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="terminal-label">{profile.countryCode} / {profile.currency}</p>
+              <h2 className="mt-1 text-[18px] font-semibold text-[#f1f1f1]">{profile.country}</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StanceBadge tone={profile.stanceTone} label={profile.stance} />
+              <div className="rounded-md border border-[var(--line)] bg-[#131415] px-3 py-1.5">
+                <p className="text-[8px] uppercase tracking-[0.08em] text-[#6b7570]">Next meeting</p>
+                <p className="mt-0.5 text-[11px] font-medium text-[#d7ddd9]">{profile.nextMeeting}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="p-4">
@@ -377,6 +388,19 @@ function filterByTimeframe(points: MacroTrendPoint[], timeframe: Timeframe) {
   const cutoff = new Date(latest.date);
   cutoff.setUTCFullYear(cutoff.getUTCFullYear() - Number(timeframe.slice(0, -1)));
   return datedPoints.filter((point) => point.date && new Date(point.date) >= cutoff);
+}
+
+function StanceBadge({ tone, label }: { tone: CountryMacroProfile["stanceTone"]; label: string }) {
+  const style = tone === "tight"
+    ? { border: "border-[#5b4a2e]", bg: "bg-[#241e14]", text: "text-[#c3a46b]" }
+    : tone === "easing"
+      ? { border: "border-[#2e4a5b]", bg: "bg-[#14202a]", text: "text-[#7fb8d9]" }
+      : { border: "border-[#353638]", bg: "bg-[#171819]", text: "text-[#8d8d8f]" };
+  return (
+    <span className={`inline-flex items-center rounded-md border px-2.5 py-1.5 text-[10px] font-medium ${style.border} ${style.bg} ${style.text}`}>
+      {label}
+    </span>
+  );
 }
 
 function SourceBadge({ source }: { source: MacroSource }) {

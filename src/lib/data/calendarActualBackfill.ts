@@ -13,10 +13,10 @@ type BackfillMapping = {
   matchesTitle: (lowerTitle: string) => boolean;
 };
 
-const percent1 = (value: number) => `${value.toFixed(1) === "-0.0" ? "0.0" : value.toFixed(1)}%`;
-const claimsK = (value: number) => `${Math.round(value / 1000)}K`;
-const jobsK = (value: number) => `${value >= 0 ? "+" : ""}${Math.round(value)}K`;
-const indexValue = (value: number) => value.toFixed(1);
+export const percent1 = (value: number) => `${value.toFixed(1) === "-0.0" ? "0.0" : value.toFixed(1)}%`;
+export const claimsK = (value: number) => `${Math.round(value / 1000)}K`;
+export const jobsK = (value: number) => `${value >= 0 ? "+" : ""}${Math.round(value)}K`;
+export const indexValue = (value: number) => value.toFixed(1);
 
 const BACKFILL_MAPPINGS: BackfillMapping[] = [
   { indicatorCode: "US_CPI_YOY", format: percent1, matchesTitle: (title) => title === "cpi y/y" },

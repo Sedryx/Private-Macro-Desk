@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { verifyPassword } from "@/lib/auth/password";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { requireUser, setSessionCookie } from "@/lib/auth/session";
 import { getSettingsCopy } from "@/lib/i18n/settings";
 import { prisma } from "@/lib/prisma";
@@ -162,6 +162,45 @@ export async function updateTraderIdentity(
       return { status: "error", message: labels.emailTaken };
     }
     console.error("Unable to migrate trader account", error);
+    return { status: "error", message: labels.saveError };
+  }
+}
+
+export async function updateTraderPassword(
+  _previousState: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  const labels = getSettingsCopy(getString(formData, "language")).traders;
+
+  let sessionUser;
+  try {
+    sessionUser = await requireUser();
+  } catch {
+    return { status: "error", message: labels.sessionExpired };
+  }
+
+  const requestedUserId = getString(formData, "userId");
+  const targetUserId = sessionUser.role === "OWNER" && requestedUserId ? requestedUserId : sessionUser.id;
+
+  const newPassword = getString(formData, "newPassword");
+  const confirmNewPassword = getString(formData, "confirmNewPassword");
+  const confirmPassword = getString(formData, "password");
+
+  if (newPassword.length < 4) return { status: "error", message: labels.passwordTooShort };
+  if (newPassword !== confirmNewPassword) return { status: "error", message: labels.passwordMismatch };
+  if (!confirmPassword) return { status: "error", message: labels.passwordRequired };
+
+  const actingUser = await prisma.user.findUnique({ where: { id: sessionUser.id } });
+  if (!actingUser?.passwordHash || !verifyPassword(confirmPassword, actingUser.passwordHash)) {
+    return { status: "error", message: labels.passwordIncorrect };
+  }
+
+  try {
+    await prisma.user.update({ where: { id: targetUserId }, data: { passwordHash: hashPassword(newPassword) } });
+    revalidatePath("/settings");
+    return { status: "success", message: labels.passwordChangeSuccess };
+  } catch (error) {
+    console.error("Unable to update trader password", error);
     return { status: "error", message: labels.saveError };
   }
 }
