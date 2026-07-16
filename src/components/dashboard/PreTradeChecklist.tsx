@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 import { SectionCard } from "@/components/ui/SectionCard";
+import { getZurichDateKey } from "@/lib/dashboard";
 
 const checklist = [
   "Macro context checked",
@@ -156,14 +157,5 @@ function notifyChecklistSubscribers() {
 
 function serializeChecklist(todayKey: string, checked: Record<string, boolean>) {
   return JSON.stringify({ dateKey: todayKey, checked });
-}
-
-function getZurichDateKey(date: Date) {
-  return new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Europe/Zurich",
-    year: "numeric",
-  }).format(date);
 }
 

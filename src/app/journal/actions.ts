@@ -14,6 +14,7 @@ import {
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
+import type { ActionState } from "@/lib/actionState";
 import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 
@@ -28,10 +29,7 @@ const SCREENSHOT_TYPES = new Map([
 ]);
 const SCREENSHOT_DIRECTORY = path.join(process.cwd(), "public", "uploads", "trade-notes");
 
-export type JournalActionState = {
-  status: "idle" | "success" | "error";
-  message: string;
-};
+export type JournalActionState = ActionState;
 
 export async function createTrade(
   _previousState: JournalActionState,

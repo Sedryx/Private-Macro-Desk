@@ -4,12 +4,10 @@ import { AssetType, Bias } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/session";
+import type { ActionState } from "@/lib/actionState";
 import { prisma } from "@/lib/prisma";
 
-export type WatchlistActionState = {
-  status: "idle" | "success" | "error";
-  message: string;
-};
+export type WatchlistActionState = ActionState;
 
 export type UpdateWatchlistItemState = WatchlistActionState;
 

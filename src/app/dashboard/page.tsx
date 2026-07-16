@@ -128,7 +128,13 @@ async function getDashboardData() {
           },
         },
       }),
-      getLatestDailyBrief(),
+      // Isolated from the rest of the Promise.all: this involves an external AI call and is
+      // more likely to fail transiently than the plain DB queries above. A failure here should
+      // degrade TodayFocusCard to its empty state, not take down the whole dashboard.
+      getLatestDailyBrief().catch((error: unknown) => {
+        console.error("Unable to load daily brief", error);
+        return null;
+      }),
     ]);
 
     const tradeCounts = {
