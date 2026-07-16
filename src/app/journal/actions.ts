@@ -171,6 +171,90 @@ export async function updateTradeStatus(
   }
 }
 
+export async function updateTrade(
+  _previousState: JournalActionState,
+  formData: FormData,
+): Promise<JournalActionState> {
+  try {
+    await requireUser();
+  } catch {
+    return { status: "error", message: SESSION_EXPIRED_MESSAGE };
+  }
+
+  const tradeId = getString(formData, "tradeId");
+  if (!tradeId) {
+    return { status: "error", message: "Trade is required." };
+  }
+
+  const thesis = getString(formData, "thesis").trim();
+  const invalidation = getString(formData, "invalidation").trim();
+  const strategyCode = getString(formData, "strategyCode").trim();
+  const result = getString(formData, "result").trim();
+  const mistakeTags = getString(formData, "mistakeTags")
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+
+  if (!thesis) {
+    return { status: "error", message: "Write a thesis before saving the trade." };
+  }
+
+  if (thesis.length > 5_000 || invalidation.length > 2_000) {
+    return { status: "error", message: "The thesis or invalidation text is too long." };
+  }
+
+  if (result.length > 2_000) {
+    return { status: "error", message: "Result is too long." };
+  }
+
+  const decimalFields = [
+    parseOptionalDecimal(formData, "entryPrice", "Entry price"),
+    parseOptionalDecimal(formData, "stopLoss", "Stop loss"),
+    parseOptionalDecimal(formData, "takeProfit", "Take profit"),
+    parseOptionalDecimal(formData, "riskPercent", "Risk percent"),
+  ] as const;
+
+  const invalidDecimal = decimalFields.find((field) => field.error);
+
+  if (invalidDecimal?.error) {
+    return { status: "error", message: invalidDecimal.error };
+  }
+
+  try {
+    const trade = await prisma.trade.findUnique({ where: { id: tradeId }, select: { id: true } });
+
+    if (!trade) {
+      return { status: "error", message: "Trade not found." };
+    }
+
+    // Asset and direction are deliberately not editable here — they define what the trade
+    // actually was, and letting them change after the fact would make the journal's history
+    // unreliable. Only correction-oriented fields (thesis, prices, and post-trade review
+    // fields) can be revised.
+    await prisma.trade.update({
+      where: { id: trade.id },
+      data: {
+        thesis,
+        invalidation: invalidation || null,
+        strategyCode: strategyCode || null,
+        result: result || null,
+        mistakeTags,
+        entryPrice: decimalFields[0].value,
+        stopLoss: decimalFields[1].value,
+        takeProfit: decimalFields[2].value,
+        riskPercent: decimalFields[3].value,
+      },
+    });
+
+    revalidatePath("/journal");
+    revalidatePath("/dashboard");
+    return { status: "success", message: "Trade updated." };
+  } catch (error) {
+    console.error("Unable to update trade", error);
+    return { status: "error", message: "The trade could not be updated." };
+  }
+}
+
 export async function deleteTrade(
   _previousState: JournalActionState,
   formData: FormData,

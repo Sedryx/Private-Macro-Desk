@@ -116,7 +116,7 @@ export function TradeCreateForm({ assets }: { assets: SelectOption[] }) {
                 <input
                   name="strategyCode"
                   type="text"
-                  defaultValue="EURUSD_TREND_D4H1H"
+                  placeholder="e.g. EURUSD_TREND_D4H1H"
                   className="desk-field px-3 py-2.5 text-[12px]"
                 />
               </FieldLabel>

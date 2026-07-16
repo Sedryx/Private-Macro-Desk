@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Neither `prisma generate`, `next build`, nor the unit tests connect to a real
+      # database — they just need DATABASE_URL/AUTH_SECRET to be set to *something*.
+      DATABASE_URL: postgresql://user:password@localhost:5432/ci_placeholder
+      AUTH_SECRET: ci-placeholder-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run test

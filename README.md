@@ -4,7 +4,7 @@ Private trading cockpit for two traders sharing the same trading account. Dashbo
 
 ## Setup
 
-Requires Node.js 20.9+, PostgreSQL, and Docker (optional, for local Postgres).
+Requires Node.js 20.9+ and PostgreSQL. Docker is optional — it can run just Postgres locally, or the whole app (see [Run with Docker](#run-with-docker)).
 
 ```bash
 npm install
@@ -28,6 +28,7 @@ Create a `.env` file (see `prisma/schema.prisma` for the datasource) with:
 | `FOREX_FACTORY_CALENDAR_URL` | No | Defaults to the public weekly calendar feed |
 | `SEC_USER_AGENT` | No | Only needed for the optional, manual SEC EDGAR sync (`npm run data:research:sec`) — not used by the default research sync |
 | `SEC_RESEARCH_TICKERS` / `SEC_RESEARCH_FORMS` / `SEC_RESEARCH_LIMIT_PER_TICKER` | No | Tune the optional SEC EDGAR sync scope |
+| `BACKUP_INTERVAL` | No | Docker only — how often the `backup` service dumps the database (e.g. `4h`, `1d`, `7d`). Defaults to `1d`. |
 
 ## Development
 
@@ -36,6 +37,26 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The home page redirects to `/dashboard`.
+
+## Run with Docker
+
+The whole app (not just Postgres) can run in Docker:
+
+```bash
+cp .env.example .env   # fill in AUTH_SECRET, FRED_API_KEY, etc.
+docker compose up --build -d
+```
+
+This starts three services:
+
+- **`postgres`** — same as before, on `:5432`.
+- **`app`** — builds the Next.js app, runs `prisma migrate deploy` automatically on every startup (so a `git pull` with a new migration just works on next restart), then serves on `:3000`. The default-account bootstrap (`user1`/`user2`) still runs the first time the database is empty.
+- **`backup`** — periodic `pg_dump` to `./backups/` on the host, controlled by `BACKUP_INTERVAL` in `.env` (accepts `4h`, `1d`, `7d`, ...; defaults to `1d`). Dumps older than 14 days are pruned automatically. Restore one with:
+  ```bash
+  docker compose exec -T postgres pg_restore -U postgres -d private_macro_desk --clean < backups/backup_YYYYMMDD_HHMMSS.dump
+  ```
+
+Trade screenshots persist across container rebuilds via a bind mount to `./public/uploads`. The manual data-sync scripts (`npm run data:*`) aren't included in the runtime image — run those locally against the same `DATABASE_URL` if you need to trigger a sync outside the normal 2-hour scheduler.
 
 ## Macro data sources
 
@@ -136,9 +157,13 @@ npm run build
 npm run test
 ```
 
+These three also run automatically on every push/PR to `main` via GitHub Actions (`.github/workflows/ci.yml`).
+
 ## Security notes
 
 - Login is rate-limited: 5 failed attempts for a given email locks it out for 15 minutes (in-memory, resets on
   server restart — fine for a two-user private app, not meant to survive a multi-instance deployment).
 - Passwords can be changed from Settings (per-trader, or by the OWNER for either account) without needing shell
   access to the server. `npm run auth:set-password` still works as a fallback if a password is ever fully lost.
+- A banner appears after login while an account still has its bootstrap default password (`user1`/`user2`) —
+  it disappears automatically once that trader sets a real password.

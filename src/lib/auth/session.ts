@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 
+import { verifyPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/prisma";
 import {
   createSessionToken,
@@ -22,7 +23,18 @@ export type SessionUser = {
   name: string;
   email: string;
   role: "OWNER" | "MEMBER";
+  usingDefaultPassword: boolean;
 };
+
+// The bootstrap accounts (see src/lib/auth/bootstrap.ts) are created with these exact
+// passwords. Checking the hash directly (rather than a stored flag) means the warning
+// disappears the moment a real password is set, with no extra schema/migration needed.
+const DEFAULT_BOOTSTRAP_PASSWORDS = ["user1", "user2"];
+
+function isUsingDefaultPassword(passwordHash: string | null): boolean {
+  if (!passwordHash) return false;
+  return DEFAULT_BOOTSTRAP_PASSWORDS.some((candidate) => verifyPassword(candidate, passwordHash));
+}
 
 export async function setSessionCookie(userId: string) {
   const token = await createSessionToken(userId);
@@ -53,10 +65,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, name: true, email: true, role: true },
+    select: { id: true, name: true, email: true, role: true, passwordHash: true },
   });
+  if (!user) return null;
 
-  return user;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    usingDefaultPassword: isUsingDefaultPassword(user.passwordHash),
+  };
 }
 
 export async function requireUser(): Promise<SessionUser> {

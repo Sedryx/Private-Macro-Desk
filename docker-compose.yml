@@ -11,6 +11,56 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d private_macro_desk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: private_macro_desk_app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Overrides the .env value: inside compose, the app must reach Postgres
+      # via the service name, not localhost.
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/private_macro_desk
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./public/uploads:/app/public/uploads
+
+  backup:
+    image: postgres:17-alpine
+    container_name: private_macro_desk_backup
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: postgres
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-1d}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backups:/backups
+    entrypoint:
+      - sh
+      - -c
+      - |
+        echo "[backup] Automated pg_dump every $$BACKUP_INTERVAL, keeping 14 days."
+        while true; do
+          timestamp=$$(date +%Y%m%d_%H%M%S)
+          pg_dump -h postgres -U postgres -d private_macro_desk -F c -f "/backups/backup_$${timestamp}.dump"
+          echo "[backup] Wrote backup_$${timestamp}.dump"
+          find /backups -name "backup_*.dump" -mtime +14 -delete
+          sleep "$$BACKUP_INTERVAL"
+        done
 
 volumes:
   postgres_data:

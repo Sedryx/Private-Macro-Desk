@@ -8,6 +8,7 @@ import {
   updateTradeStatus,
   type JournalActionState,
 } from "@/app/journal/actions";
+import { TradeEditForm } from "@/components/journal/TradeEditForm";
 import { TradeNoteForm } from "@/components/journal/TradeNoteForm";
 import type { TradeView } from "@/components/journal/TradeList";
 
@@ -36,6 +37,7 @@ export function TradeCard({ trade, initialCollapsed = false }: { trade: TradeVie
   const [deleteState, deleteAction, isDeletePending] = useActionState(deleteTrade, initialState);
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   return (
     <article className="desk-surface overflow-hidden">
@@ -63,11 +65,24 @@ export function TradeCard({ trade, initialCollapsed = false }: { trade: TradeVie
         <form action={statusAction} className="flex flex-wrap items-end gap-2 lg:justify-end">
           <button
             type="button"
-            onClick={() => setCollapsed((current) => !current)}
+            onClick={() => {
+              setCollapsed((current) => !current);
+              setEditing(false);
+            }}
             className="rounded-lg border border-[var(--line)] bg-[#0c1013] px-3 py-2 text-[10px] font-semibold text-[#9aa39f] transition hover:border-[#3a4540] hover:text-[#e2e7e4]"
             aria-expanded={!collapsed}
           >
             {collapsed ? "Expand" : "Collapse"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCollapsed(false);
+              setEditing((current) => !current);
+            }}
+            className="rounded-lg border border-[var(--line)] bg-[#0c1013] px-3 py-2 text-[10px] font-semibold text-[#9aa39f] transition hover:border-[#3a4540] hover:text-[#e2e7e4]"
+          >
+            {editing ? "Editing..." : "Edit"}
           </button>
           <input type="hidden" name="tradeId" value={trade.id} />
           <label>
@@ -132,6 +147,10 @@ export function TradeCard({ trade, initialCollapsed = false }: { trade: TradeVie
         </div>
       ) : (
         <>
+      {editing ? (
+        <TradeEditForm trade={trade} onDone={() => setEditing(false)} />
+      ) : (
+        <>
       <div className="grid gap-px bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-4">
         <Metric label="Entry" value={trade.entryPrice} />
         <Metric label="Stop loss" value={trade.stopLoss} />
@@ -177,6 +196,8 @@ export function TradeCard({ trade, initialCollapsed = false }: { trade: TradeVie
           </dl>
         </aside>
       </div>
+      </>
+      )}
 
       <div className="border-t border-[var(--line)] bg-[#0f1418] px-5 py-5 sm:px-6">
         <div className="flex items-end justify-between gap-4">
