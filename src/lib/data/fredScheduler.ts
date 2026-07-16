@@ -5,7 +5,7 @@ import { syncEuroAreaData } from "@/lib/data/euroAreaSync";
 import { syncFedResearchDocuments } from "@/lib/data/fedResearch";
 import { syncForexFactoryCalendar } from "@/lib/data/forex-factory";
 import { FRED_SERIES, syncFredSeries } from "@/lib/data/fred";
-import { FX_VOLATILITY_SERIES } from "@/lib/data/fxVolatility";
+import { FX_VOLATILITY_SERIES, syncFxVolatilitySeries } from "@/lib/data/fxVolatility";
 import { OFFICIAL_GLOBAL_SERIES } from "@/lib/data/global-series";
 import { syncGlobalSeries } from "@/lib/data/globalSync";
 
@@ -129,8 +129,18 @@ export async function syncMacroIfStale(force = false) {
         console.error(`[Macro scheduler] ${series.code}: ${errorMessage(error)}`);
       }
     }
+
+    try {
+      const fxResults = await syncFxVolatilitySeries();
+      for (const result of fxResults) {
+        console.log(`[Macro scheduler] ${result.code}: ${result.valueCount} FRED values.`);
+      }
+    } catch (error) {
+      for (const series of FX_VOLATILITY_SERIES) failures.push(series.code);
+      console.error(`[Macro scheduler] FX volatility sync failed: ${errorMessage(error)}`);
+    }
   } else {
-    console.warn("[Macro scheduler] FRED_API_KEY missing; US refresh skipped.");
+    console.warn("[Macro scheduler] FRED_API_KEY missing; US + FX volatility refresh skipped.");
   }
 
   const euroArea = await syncEuroAreaData();
