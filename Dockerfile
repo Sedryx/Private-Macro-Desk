@@ -59,6 +59,10 @@ COPY --from=build /app/node_modules ./node_modules
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
+# CLI password reset — for when Settings isn't reachable (e.g. locked out, no browser
+# session). Usage: docker compose exec app node docker-set-password.cjs <email> <password>
+COPY scripts/docker-set-password.cjs ./docker-set-password.cjs
+
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -q --spider http://localhost:3000/login || exit 1

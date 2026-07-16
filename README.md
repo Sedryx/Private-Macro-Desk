@@ -56,39 +56,75 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) — the home page redirects to `/dashboard`.
 
 If the app starts against a completely empty database (no seed run yet), it auto-creates two default accounts
-on first boot so you can log in immediately: `user1` / `user1` (owner) and `user2` / `user2` (member). A
-banner reminds you to change these from Settings until you do — see [Security notes](#security-notes).
+on first boot so you can log in immediately, plus a starter "Main Watchlist" pre-loaded with 33 assets across
+indices, forex, commodities, crypto, rates and stocks, so the desk isn't empty. The login form asks for an **email**, not a username:
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `user1@private-macro-desk.local` | `user1` | Owner |
+| `user2@private-macro-desk.local` | `user2` | Member |
+
+A banner reminds you to change the default passwords from Settings until you do — see
+[Security notes](#security-notes). The same first-boot event writes these exact credentials once to
+`CREDENTIALS.txt` in the app's working directory — in Docker, retrieve it with
+`docker compose cp app:/app/CREDENTIALS.txt .` (useful when handing the app to someone else who doesn't have a
+terminal open on `docker compose logs`). The file is never updated after that first write, so it always shows
+the original defaults even once passwords have been changed. The same credentials are also printed once to
+the `app` container's logs on first boot (`docker compose logs app`).
+
+Forgot a password and can't reach Settings (e.g. locked out after too many failed attempts)? Reset it straight
+from the container, no browser session needed:
+
+```bash
+docker compose exec app node docker-set-password.cjs user1@private-macro-desk.local a-new-password
+```
 
 ## Run with Docker
 
-The whole app (not just Postgres) can run in Docker — this is the recommended way to run it day-to-day:
+The whole app (not just Postgres) can run in Docker — this is the recommended way to run it day-to-day.
+`docker-compose.yml` has no dependency on the repo checkout beyond `.env` sitting next to it: the `app` image
+is pulled pre-built from Docker Hub (`sedryx/private-macro-desk`, private repo — ask for access and run
+`docker login` first), so you can copy just `docker-compose.yml` + `.env.example` to any host and run it there.
 
 ```bash
 cp .env.example .env   # fill in AUTH_SECRET, FRED_API_KEY, etc.
-docker compose up --build -d
+docker login           # once, if you haven't already — the image repo is private
+docker compose up -d
 ```
 
 This starts three services:
 
 - **`postgres`** — same as before, on `:5432`.
-- **`app`** — builds the Next.js app, runs `prisma migrate deploy` automatically on every startup (so a
-  `git pull` with a new migration just works on next restart), then serves on `:3000`. The default-account
-  bootstrap still runs the first time the database is empty. Ships with a container `HEALTHCHECK` against
-  `/login`.
-- **`backup`** — periodic `pg_dump` to `./backups/` on the host, controlled by `BACKUP_INTERVAL` in `.env`
-  (accepts `4h`, `1d`, `7d`, ...; defaults to `1d`). Dumps older than 14 days are pruned automatically. Restore
-  one with:
+- **`app`** — pulls `sedryx/private-macro-desk:${IMAGE_TAG:-v1-alpha}`, runs `prisma migrate deploy`
+  automatically on every startup (so a new release with a migration just works on next restart), then serves
+  on `:3000`. The default-account bootstrap still runs the first time the database is empty. Ships with a
+  container `HEALTHCHECK` against `/login`. Set `IMAGE_TAG` in `.env` to pin a specific version instead of the
+  default `v1-alpha`.
+- **`backup`** — periodic `pg_dump` into the named volume `backups_data`, controlled by `BACKUP_INTERVAL` in
+  `.env` (accepts `4h`, `1d`, `7d`, ...; defaults to `1d`). Dumps older than 14 days are pruned automatically.
+  Copy a dump out to restore it:
   ```bash
-  docker compose exec -T postgres pg_restore -U postgres -d private_macro_desk --clean < backups/backup_YYYYMMDD_HHMMSS.dump
+  docker compose cp backup:/backups/backup_YYYYMMDD_HHMMSS.dump .
+  docker compose exec -T postgres pg_restore -U postgres -d private_macro_desk --clean < backup_YYYYMMDD_HHMMSS.dump
   ```
 
-Trade screenshots persist across container rebuilds via a bind mount to `./public/uploads`. The manual
+Trade screenshots persist across container restarts via the named volume `uploads_data`.  The manual
 data-sync scripts (`npm run data:*`) aren't included in the runtime image — run those locally against the same
 `DATABASE_URL` if you need to trigger a sync outside the normal 2-hour scheduler.
 
 The image runs as root deliberately (not a security best practice in general, but matching a non-root user's
-UID to whatever owns the bind-mounted `./public/uploads` on the host adds fragility that isn't worth it for a
-two-user private app on a trusted host).
+UID to whatever owns a bind-mounted uploads folder adds fragility that isn't worth it for a two-user private
+app on a trusted host).
+
+### Building from source instead of pulling
+
+To build the image locally from the Dockerfile (e.g. while changing it) instead of pulling from Docker Hub,
+layer the dev override on top — it also switches `uploads_data`/`backups_data` to bind mounts
+(`./public/uploads`, `./backups`) so the files are easy to inspect on disk:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
+```
 
 ## Environment variables
 

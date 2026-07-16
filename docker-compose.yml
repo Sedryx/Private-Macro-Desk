@@ -1,7 +1,11 @@
+# No `container_name:` on any service, on purpose: fixed names are global to the Docker
+# host and collide if this file is ever run from two different directories at once (e.g.
+# a checkout and a separate deploy folder) — Compose's per-project auto-generated names
+# avoid that. Use `docker compose exec <service> ...` / `docker compose cp <service>:...`
+# (resolved from the directory you're in) instead of a literal container name.
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: private_macro_desk_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -18,10 +22,10 @@ services:
       retries: 10
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: private_macro_desk_app
+    # Pulled from Docker Hub. To build from local source
+    # instead (e.g. active development on the Dockerfile), use:
+    #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+    image: sedryx/private-macro-desk:${IMAGE_TAG:-v1-alpha}
     restart: unless-stopped
     env_file:
       - .env
@@ -35,11 +39,10 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./public/uploads:/app/public/uploads
+      - uploads_data:/app/public/uploads
 
   backup:
     image: postgres:17-alpine
-    container_name: private_macro_desk_backup
     restart: unless-stopped
     environment:
       PGPASSWORD: postgres
@@ -48,7 +51,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./backups:/backups
+      - backups_data:/backups
     entrypoint:
       - sh
       - -c
@@ -64,3 +67,5 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
+  backups_data:

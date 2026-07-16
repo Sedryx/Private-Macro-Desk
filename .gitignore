@@ -23,6 +23,9 @@
 # database backups (docker-compose "backup" service)
 /backups/
 
+# written once at first boot by ensureDefaultUsers() — see src/lib/auth/bootstrap.ts
+/CREDENTIALS.txt
+
 # vercel
 .vercel
 

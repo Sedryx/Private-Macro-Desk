@@ -1,0 +1,19 @@
+# Local development override: builds the app image from source instead of
+# pulling it from Docker Hub, and swaps the named volumes for bind mounts so
+# uploads/backups are easy to inspect on disk during development.
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  app:
+    # `image:` from the base file is kept — it's what --build tags the
+    # locally-built result as, so it matches the name you'd otherwise pull.
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./public/uploads:/app/public/uploads
+
+  backup:
+    volumes:
+      - ./backups:/backups
