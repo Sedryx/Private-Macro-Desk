@@ -18,13 +18,31 @@ RUN npm run build
 
 # ---- runtime ----
 FROM node:20-slim AS runtime
+
+ARG APP_VERSION=dev
+LABEL org.opencontainers.image.title="Private Macro Desk" \
+      org.opencontainers.image.description="Private trading cockpit for two traders: dashboard, watchlist, trade journal, economic calendar, research library and a macro terminal." \
+      org.opencontainers.image.source="https://github.com/Sedryx/Private-Macro-Desk" \
+      org.opencontainers.image.licenses="UNLICENSED" \
+      org.opencontainers.image.version="${APP_VERSION}"
+
 WORKDIR /app
 ENV NODE_ENV=production
+# Docker auto-sets HOSTNAME to the container ID, and Next's standalone server binds to
+# whatever HOSTNAME resolves to — without this override it ends up listening only on the
+# container's own IP, not on localhost, which breaks in-container checks (e.g. the
+# HEALTHCHECK below) even though external access via the published port still works.
+ENV HOSTNAME="0.0.0.0"
 # Prisma's engine needs a real OpenSSL install to detect the right variant, otherwise it
-# silently falls back to a guessed version on every startup.
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl \
+# silently falls back to a guessed version on every startup. wget powers the healthcheck.
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl wget \
     && rm -rf /var/lib/apt/lists/*
 
+# Runs as root deliberately: the app writes trade screenshots to a bind-mounted host
+# directory (see docker-compose.yml), and matching a non-root container user's UID to
+# whatever owns that directory on the host adds real fragility for a two-user private
+# app that isn't worth it here. Fine for this trust model; revisit if this ever needs
+# to run in a shared/multi-tenant environment.
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
@@ -42,5 +60,8 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -q --spider http://localhost:3000/login || exit 1
+
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

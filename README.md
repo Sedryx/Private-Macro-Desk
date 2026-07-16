@@ -1,22 +1,98 @@
 # Private Macro Desk
 
-Private trading cockpit for two traders sharing the same trading account. Dashboard, watchlist, trade journal, economic calendar, research library and a macro terminal with live central bank, inflation, labour, growth and bond-yield data for the US, Euro Area, UK, Switzerland and Japan.
+A private trading cockpit for two traders sharing the same account: dashboard, watchlist, trade journal,
+economic calendar, research library, and a macro terminal with live central bank, inflation, labour, growth
+and bond-yield data for the US, Euro Area, UK, Switzerland and Japan.
 
-## Setup
+This is a personal project, built for real day-to-day use by its two traders — not a commercial product. Every
+data point in the app either comes from a real, cited free source or is clearly labelled as not connected;
+nothing is fabricated to make a screen look more finished than the data actually is. That principle shapes a lot
+of the detail in this README.
 
-Requires Node.js 20.9+ and PostgreSQL. Docker is optional — it can run just Postgres locally, or the whole app (see [Run with Docker](#run-with-docker)).
+**Status: v1-alpha** — feature-complete for daily use by its two intended traders, dockerized, with automated
+backups and CI. See [Project status](#project-status) for what's deliberately out of scope for now.
+
+## What's inside
+
+- **Dashboard** — desk-wide snapshot: today's/tomorrow's calendar events, an AI-generated daily macro recap,
+  a macro snapshot strip, watchlist and trade activity, open-risk visuals, and a personal pre-trade checklist.
+- **Watchlist** — shared list of assets with bias, key levels and notes, editable by either trader.
+- **Trade journal** — trade ideas through to close: thesis, invalidation, setup checklist, prices, risk sizing,
+  post-trade result and mistake tags (all editable after the fact), threaded notes with screenshot uploads.
+- **Economic calendar** — Forex Factory feed with sparklines, a real "Actual" column backfilled from FRED where
+  possible, and a per-event FX price chart around the release date.
+- **Research library** — Fed and ECB monetary policy statements, auto-synced, with AI-generated key takeaways
+  and a summary/takeaways toggle, sortable by date.
+- **Macro terminal** — five regional profiles (US, Euro Area, Switzerland, UK, Japan) with central bank rates,
+  inflation, labour, growth and bond yields, a computed policy-trend badge, and a global overview tab with an
+  FX volatility chart and a risk sentiment gauge.
+- **Two-trader auth** — session-based login, brute-force lockout, per-trader password management, and a
+  first-run bootstrap so the app is usable the moment the database is empty.
+- **Bilingual settings** — the Settings tab is fully translated (EN/FR); the rest of the app is English-only
+  for now (see [Language](#language)).
+
+## Tech stack
+
+- [Next.js 16](https://nextjs.org) (App Router, Turbopack, Server Actions) + React 19 + TypeScript
+- [Prisma 7](https://www.prisma.io) with the `@prisma/adapter-pg` driver adapter, on PostgreSQL
+- Tailwind CSS 4
+- [Google Gemini API](https://ai.google.dev) (free tier) for the optional AI features
+- [Vitest](https://vitest.dev) for unit tests, GitHub Actions for CI
+- Docker / docker-compose for deployment
+
+## Quick start (local)
+
+Requires Node.js 20.9+ and PostgreSQL. Docker is optional here — it can just run Postgres locally, or the
+whole app (see [Run with Docker](#run-with-docker)).
 
 ```bash
 npm install
-docker compose up -d        # local Postgres on :5432
+docker compose up -d postgres   # local Postgres on :5432
 npx prisma migrate deploy
 npx prisma db seed
-npm run auth:set-password -- <email> <password>
+npm run dev
 ```
 
-If the app starts against a completely empty database (no seed run yet), it auto-creates two default accounts on first boot so you can log in immediately: `user1` / `user1` (owner) and `user2` / `user2` (member). Rename them from Settings once you're in — see the account migration note below.
+Open [http://localhost:3000](http://localhost:3000) — the home page redirects to `/dashboard`.
 
-Create a `.env` file (see `prisma/schema.prisma` for the datasource) with:
+If the app starts against a completely empty database (no seed run yet), it auto-creates two default accounts
+on first boot so you can log in immediately: `user1` / `user1` (owner) and `user2` / `user2` (member). A
+banner reminds you to change these from Settings until you do — see [Security notes](#security-notes).
+
+## Run with Docker
+
+The whole app (not just Postgres) can run in Docker — this is the recommended way to run it day-to-day:
+
+```bash
+cp .env.example .env   # fill in AUTH_SECRET, FRED_API_KEY, etc.
+docker compose up --build -d
+```
+
+This starts three services:
+
+- **`postgres`** — same as before, on `:5432`.
+- **`app`** — builds the Next.js app, runs `prisma migrate deploy` automatically on every startup (so a
+  `git pull` with a new migration just works on next restart), then serves on `:3000`. The default-account
+  bootstrap still runs the first time the database is empty. Ships with a container `HEALTHCHECK` against
+  `/login`.
+- **`backup`** — periodic `pg_dump` to `./backups/` on the host, controlled by `BACKUP_INTERVAL` in `.env`
+  (accepts `4h`, `1d`, `7d`, ...; defaults to `1d`). Dumps older than 14 days are pruned automatically. Restore
+  one with:
+  ```bash
+  docker compose exec -T postgres pg_restore -U postgres -d private_macro_desk --clean < backups/backup_YYYYMMDD_HHMMSS.dump
+  ```
+
+Trade screenshots persist across container rebuilds via a bind mount to `./public/uploads`. The manual
+data-sync scripts (`npm run data:*`) aren't included in the runtime image — run those locally against the same
+`DATABASE_URL` if you need to trigger a sync outside the normal 2-hour scheduler.
+
+The image runs as root deliberately (not a security best practice in general, but matching a non-root user's
+UID to whatever owns the bind-mounted `./public/uploads` on the host adds fragility that isn't worth it for a
+two-user private app on a trusted host).
+
+## Environment variables
+
+Create a `.env` file (`.env.example` has the same list, ready to copy):
 
 | Variable | Required | Notes |
 | --- | --- | --- |
@@ -29,34 +105,6 @@ Create a `.env` file (see `prisma/schema.prisma` for the datasource) with:
 | `SEC_USER_AGENT` | No | Only needed for the optional, manual SEC EDGAR sync (`npm run data:research:sec`) — not used by the default research sync |
 | `SEC_RESEARCH_TICKERS` / `SEC_RESEARCH_FORMS` / `SEC_RESEARCH_LIMIT_PER_TICKER` | No | Tune the optional SEC EDGAR sync scope |
 | `BACKUP_INTERVAL` | No | Docker only — how often the `backup` service dumps the database (e.g. `4h`, `1d`, `7d`). Defaults to `1d`. |
-
-## Development
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000). The home page redirects to `/dashboard`.
-
-## Run with Docker
-
-The whole app (not just Postgres) can run in Docker:
-
-```bash
-cp .env.example .env   # fill in AUTH_SECRET, FRED_API_KEY, etc.
-docker compose up --build -d
-```
-
-This starts three services:
-
-- **`postgres`** — same as before, on `:5432`.
-- **`app`** — builds the Next.js app, runs `prisma migrate deploy` automatically on every startup (so a `git pull` with a new migration just works on next restart), then serves on `:3000`. The default-account bootstrap (`user1`/`user2`) still runs the first time the database is empty.
-- **`backup`** — periodic `pg_dump` to `./backups/` on the host, controlled by `BACKUP_INTERVAL` in `.env` (accepts `4h`, `1d`, `7d`, ...; defaults to `1d`). Dumps older than 14 days are pruned automatically. Restore one with:
-  ```bash
-  docker compose exec -T postgres pg_restore -U postgres -d private_macro_desk --clean < backups/backup_YYYYMMDD_HHMMSS.dump
-  ```
-
-Trade screenshots persist across container rebuilds via a bind mount to `./public/uploads`. The manual data-sync scripts (`npm run data:*`) aren't included in the runtime image — run those locally against the same `DATABASE_URL` if you need to trigger a sync outside the normal 2-hour scheduler.
 
 ## Macro data sources
 
@@ -139,8 +187,9 @@ empty state if the key is missing or a call fails — nothing else in the app de
 
 - **Daily macro brief** — once a day, grounded only in the latest real Fed/ECB statement text and this week's
   economic calendar, Gemini writes a short recap, 2–3 weighted drivers, a base/bull/bear scenario breakdown, and a
-  risk-sentiment score. Shown on the Macro overview tab, labelled "AI take" with the generation timestamp. Runs on
-  the same 2-hour scheduler tick as everything else, but only actually calls the model once per day.
+  risk-sentiment score. Shown on the Dashboard and Macro overview tab, labelled "AI take" with the generation
+  timestamp. Runs on the same 2-hour scheduler tick as everything else, but only actually calls the model once
+  per day.
 - **Research key takeaways** — when a new Fed or ECB statement is synced, Gemini extracts 3–6 bullet takeaways from
   the full statement text (stored in `ResearchChunk`). Only runs on newly created documents, not on every refresh,
   to keep API usage low. Falls back to the existing mechanical summary if unset.
@@ -149,7 +198,7 @@ empty state if the key is missing or a call fails — nothing else in the app de
 
 The Settings tab is fully translated (EN/FR) via a shared dictionary (`src/lib/i18n/settings.ts`); the rest of the app is English-only.
 
-## Checks
+## Development & checks
 
 ```bash
 npm run lint
@@ -167,3 +216,23 @@ These three also run automatically on every push/PR to `main` via GitHub Actions
   access to the server. `npm run auth:set-password` still works as a fallback if a password is ever fully lost.
 - A banner appears after login while an account still has its bootstrap default password (`user1`/`user2`) —
   it disappears automatically once that trader sets a real password.
+- No secrets are baked into the Docker image — `.env*` is excluded from the build context (`.dockerignore`),
+  and the placeholder `DATABASE_URL` used at build time (for `prisma generate`/`next build`) is never a real
+  connection string; the real one is only supplied at container startup.
+
+## Project status
+
+This is the **v1-alpha** milestone: daily-use-ready for its two traders, with real data throughout, Docker
+deployment, automated backups, and CI. Deliberately not in scope yet:
+
+- Full French translation (Settings only is translated today)
+- Trading analytics (win rate, P&L over time, R-multiple) — would need new schema fields (`exitPrice`,
+  `realizedPnl`, `rMultiple`) that don't exist yet
+- Live price quotes / price alerts on the watchlist — would require a paid market-data feed, which this project
+  deliberately avoids
+- Mobile-optimized layout — the UI is desk/wide-screen first (dense tables, a fullscreen mode on the calendar)
+
+## License
+
+Personal project, shared publicly for reference. No open-source license is granted — please don't redistribute
+or use this commercially. No warranty of any kind.
